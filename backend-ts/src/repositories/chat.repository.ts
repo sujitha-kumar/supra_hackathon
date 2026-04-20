@@ -117,7 +117,7 @@ export class ChatRepository {
       .insert({
         session_id: numericSessionId,
         content,
-        role: sender === 'ai' ? 'assistant' : sender,
+        sender: sender === 'ai' ? 'ai' : sender,
         created_at: now.toISOString(),
       })
       .select()

@@ -161,7 +161,7 @@ export const LiveChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white ml-64 overflow-hidden">
       <div className="flex-1 flex flex-col">
         <div className="border-b border-gray-200 px-6 py-4 bg-white">
           <div className="flex items-center justify-between">

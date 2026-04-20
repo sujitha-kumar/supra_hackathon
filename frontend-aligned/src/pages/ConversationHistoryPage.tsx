@@ -17,7 +17,7 @@ export const ConversationHistoryPage: React.FC = () => {
     : null;
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white ml-64 overflow-hidden">
       <div className="w-96 border-r border-gray-200">
         {isLoading ? (
           <div className="p-4">

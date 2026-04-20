@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { ClientRepository } from '../repositories/client.repository';
 import { CopilotService } from './copilot.service';
+import { generateAIResponse } from '../utils/aiClient';
 
 export class ChatService {
   private repository: ChatRepository;
@@ -82,6 +83,7 @@ export class ChatService {
         return this.getGenericResponse(messageData.message);
       }
 
+
       const [portfolio, interactions] = await Promise.all([
         this.clientRepository.getPortfolio(messageData.client_id),
         this.clientRepository.getInteractions(messageData.client_id, 5),
@@ -112,42 +114,29 @@ export class ChatService {
     }
   }
 
-  private getGenericResponse(message: string): string {
-    const lower = message.toLowerCase();
+  private async getGenericResponse(message: string): Promise<string> {
+    try {
+      const systemPrompt = `You are an AI copilot for a wealth management Relationship Manager (RM) at FundsIndia, a mutual fund investment platform in India.
+Your role is to help RMs prepare for client calls and answer questions about portfolios, SIPs, market conditions, and investment strategies.
+Use Indian financial terminology (SIP, MF, AUM, SEBI, XIRR, CAGR, etc.) and format currency in Indian style (₹1,23,456).
+Be concise, professional, and actionable. Always end with a specific suggested action for the RM.
 
-    if (lower.includes('portfolio') || lower.includes('summary')) {
+Format your response as:
+[2-4 sentence analysis or answer]
+
+**Suggested Action:** [one specific action the RM should take]`;
+
+      const text = await generateAIResponse(systemPrompt, message);
+      return text;
+    } catch {
       return (
-        'Here is a quick portfolio overview based on available data.\n\n' +
-        '- Review current allocation and ensure it aligns with the agreed risk profile.\n' +
-        '- Identify any concentration risk and confirm liquidity needs.\n\n' +
-        '**Suggested Action:** Schedule a portfolio review call with the client.'
+        'I can help with portfolio summaries, risk analysis, SIP performance, rebalancing, and call preparation.\n\n' +
+        'Try asking:\n' +
+        '- "What is a good opening line for a client call?"\n' +
+        '- "How do I explain SIP underperformance to a client?"\n' +
+        '- "What are current market risks for equity funds?"\n\n' +
+        '**Suggested Action:** Select a client from the sidebar to get context-aware, personalized insights.'
       );
     }
-
-    if (lower.includes('risk')) {
-      return (
-        'Risk snapshot for this client:\n\n' +
-        '- Confirm risk tolerance and investment time horizon.\n' +
-        '- Check equity/debt balance versus target allocation.\n' +
-        '- Review drawdown comfort and rebalancing rules.\n\n' +
-        '**Suggested Action:** Request a client to complete an updated risk assessment form.'
-      );
-    }
-
-    if (lower.includes('rebalance')) {
-      return (
-        'Rebalancing considerations:\n\n' +
-        '- Compare current allocation versus model allocation for risk profile.\n' +
-        '- Prioritize tax-aware moves and avoid unnecessary churn.\n' +
-        '- Set execution window and confirm transaction costs.\n\n' +
-        '**Suggested Action:** Prepare a rebalancing proposal for client approval.'
-      );
-    }
-
-    return (
-      'I can help with portfolio summaries, risk analysis, rebalancing, and call preparation.\n\n' +
-      'Try asking: "Give me a portfolio summary" or "What are the risk factors?" or "Should we rebalance?"\n\n' +
-      '**Suggested Action:** Select a client from the sidebar to get context-aware insights.'
-    );
   }
 }
