@@ -1,0 +1,14 @@
+export { LoginPage } from './LoginPage';
+export { HomePage } from './HomePage';
+export { ClientsPage } from './ClientsPage';
+export { ClientsListPage } from './ClientsListPage';
+export { ClientDetailPage } from './ClientDetailPage';
+export { ClientProfilePage } from './ClientProfilePage';
+export { ChatPage } from './ChatPage';
+export { LiveChatPage } from './LiveChatPage';
+export { HistoryPage } from './HistoryPage';
+export { ConversationHistoryPage } from './ConversationHistoryPage';
+export { TasksPage } from './TasksPage';
+export { TaskCreatePage } from './TaskCreatePage';
+export { AnalyticsPage } from './AnalyticsPage';
+export { SettingsPage } from './SettingsPage';

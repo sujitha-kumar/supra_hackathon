@@ -1,0 +1,34 @@
+import React from 'react';
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  padding?: 'sm' | 'md' | 'lg';
+  hover?: boolean;
+  onClick?: () => void;
+}
+
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  padding = 'md',
+  hover = false,
+  onClick,
+}) => {
+  const paddingStyles = {
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8',
+  };
+  
+  const hoverStyles = hover ? 'hover:shadow-md transition-shadow duration-200' : '';
+  
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 ${paddingStyles[padding]} ${hoverStyles} ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  );
+};
