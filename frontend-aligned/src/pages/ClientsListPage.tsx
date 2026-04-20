@@ -1,26 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout';
 import { Button, Badge, Card, DataTable, Pagination } from '../components/ui';
-import type { Column } from '../components/ui';
-import { extendedMockClients } from '../data/extendedMockClients';
-import type { ExtendedClient } from '../data/extendedMockClients';
+import { useClients } from '../hooks/useClients';
+import type { Client } from '../types/api';
 
 export const ClientsListPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [segmentFilter, setSegmentFilter] = useState<string>('all');
   const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [activeView, setActiveView] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 20;
 
-  const savedViews = [
-    { id: 'all', label: 'All Clients', count: extendedMockClients.length },
-    { id: 'active', label: 'Active', count: extendedMockClients.filter(c => c.status === 'active').length },
-    { id: 'overdue', label: 'Overdue', count: extendedMockClients.filter(c => c.status === 'overdue').length },
-    { id: 'premium', label: 'Premium', count: extendedMockClients.filter(c => c.tags.includes('Premium')).length },
-  ];
+  const queryParams = useMemo(() => ({
+    search: searchQuery || undefined,
+    segment: segmentFilter !== 'all' ? segmentFilter : undefined,
+    risk_profile: riskFilter !== 'all' ? riskFilter : undefined,
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  }), [searchQuery, segmentFilter, riskFilter, currentPage]);
+
+  const { data, isLoading, error } = useClients(queryParams);
+
+  const clients = data?.clients || [];
+  const totalClients = data?.total || 0;
+  const totalPages = Math.ceil(totalClients / itemsPerPage);
 
   const getInitials = (name: string) => {
     return name
@@ -30,29 +35,49 @@ export const ClientsListPage: React.FC = () => {
       .toUpperCase();
   };
 
-  const getRiskBadge = (risk: ExtendedClient['risk']) => {
+  const getRiskBadge = (risk: Client['risk_profile']) => {
     const variants = {
-      'low': { variant: 'success' as const, label: 'Low Risk' },
-      'medium': { variant: 'warning' as const, label: 'Medium' },
-      'high': { variant: 'danger' as const, label: 'High Risk' },
-      'very-high': { variant: 'danger' as const, label: 'Very High' },
+      'Conservative': { variant: 'success' as const, label: 'Conservative' },
+      'Moderate': { variant: 'warning' as const, label: 'Moderate' },
+      'Aggressive': { variant: 'danger' as const, label: 'Aggressive' },
     };
     const config = variants[risk];
     return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
   };
 
-  const getStatusBadge = (status: ExtendedClient['status']) => {
+  const getSegmentBadge = (segment: Client['segment']) => {
     const variants = {
-      'active': { variant: 'success' as const, label: 'Active' },
-      'pending': { variant: 'warning' as const, label: 'Pending' },
-      'inactive': { variant: 'default' as const, label: 'Inactive' },
-      'overdue': { variant: 'danger' as const, label: 'Overdue' },
+      'Retail': { variant: 'default' as const, label: 'Retail' },
+      'HNI': { variant: 'brand' as const, label: 'HNI' },
+      'UHNI': { variant: 'success' as const, label: 'UHNI' },
     };
-    const config = variants[status];
+    const config = variants[segment];
     return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
   };
 
-  const columns: Column<ExtendedClient>[] = [
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  const columns = [
     {
       key: 'name',
       header: 'Client',
@@ -66,7 +91,7 @@ export const ClientsListPage: React.FC = () => {
           </div>
           <div>
             <p className="font-medium text-gray-900">{client.name}</p>
-            <p className="text-sm text-gray-500">PAN: {client.pan}</p>
+            <p className="text-sm text-gray-500">{client.email || client.pan}</p>
           </div>
         </div>
       ),
@@ -77,8 +102,8 @@ export const ClientsListPage: React.FC = () => {
       width: '15%',
       render: (client) => (
         <div>
-          <p className="text-gray-900">{client.company}</p>
-          <p className="text-sm text-gray-500">{client.email}</p>
+          <p className="text-gray-900">{client.segment}</p>
+          <p className="text-sm text-gray-500">Score: {client.risk_score}/10</p>
         </div>
       ),
     },
@@ -88,12 +113,7 @@ export const ClientsListPage: React.FC = () => {
       width: '12%',
       render: (client) => (
         <div>
-          <p className="font-semibold text-gray-900">{client.aum}</p>
-          <p className={`text-sm font-medium ${
-            client.ytd >= 0 ? 'text-success' : 'text-danger'
-          }`}>
-            {client.ytd >= 0 ? '+' : ''}{client.ytd}% YTD
-          </p>
+          <p className="font-semibold text-gray-900">{formatCurrency(client.total_aum)}</p>
         </div>
       ),
     },
@@ -101,20 +121,20 @@ export const ClientsListPage: React.FC = () => {
       key: 'risk',
       header: 'Risk Profile',
       width: '12%',
-      render: (client) => getRiskBadge(client.risk),
+      render: (client) => getRiskBadge(client.risk_profile),
     },
     {
-      key: 'status',
-      header: 'Status',
+      key: 'segment',
+      header: 'Segment',
       width: '10%',
-      render: (client) => getStatusBadge(client.status),
+      render: (client) => getSegmentBadge(client.segment),
     },
     {
       key: 'lastContact',
       header: 'Last Contact',
       width: '12%',
       render: (client) => (
-        <p className="text-gray-600 text-sm">{client.lastContact}</p>
+        <p className="text-gray-600 text-sm">{formatDate(client.last_contacted_at)}</p>
       ),
     },
     {
@@ -127,7 +147,7 @@ export const ClientsListPage: React.FC = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/clients/${client.id}`);
+              navigate(`/clients/${client.client_id}`);
             }}
             className="p-2 text-gray-600 hover:text-brand hover:bg-blue-50 rounded-lg transition-colors"
             title="View Details"
@@ -140,7 +160,7 @@ export const ClientsListPage: React.FC = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit client:', client.id);
+              console.log('Edit client:', client.client_id);
             }}
             className="p-2 text-gray-600 hover:text-brand hover:bg-blue-50 rounded-lg transition-colors"
             title="Edit"
@@ -154,28 +174,33 @@ export const ClientsListPage: React.FC = () => {
     },
   ];
 
-  const filteredClients = extendedMockClients.filter((client) => {
-    const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.pan.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    const matchesRisk = riskFilter === 'all' || client.risk === riskFilter;
-    
-    const matchesView = 
-      activeView === 'all' ||
-      (activeView === 'active' && client.status === 'active') ||
-      (activeView === 'overdue' && client.status === 'overdue') ||
-      (activeView === 'premium' && client.tags.includes('Premium'));
+  if (isLoading) {
+    return (
+      <PageWrapper>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading clients...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
-    return matchesSearch && matchesStatus && matchesRisk && matchesView;
-  });
-
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const paginatedClients = filteredClients.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  if (error) {
+    return (
+      <PageWrapper>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Clients</h2>
+            <p className="text-gray-600">{error instanceof Error ? error.message : 'Failed to load clients'}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   const handleExport = () => {
     console.log('Exporting clients data...');
@@ -234,71 +259,54 @@ export const ClientsListPage: React.FC = () => {
           </div>
 
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={segmentFilter}
+            onChange={(e) => {
+              setSegmentFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all bg-white"
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="inactive">Inactive</option>
-            <option value="overdue">Overdue</option>
+            <option value="all">All Segments</option>
+            <option value="Retail">Retail</option>
+            <option value="HNI">HNI</option>
+            <option value="UHNI">UHNI</option>
           </select>
 
           <select
             value={riskFilter}
-            onChange={(e) => setRiskFilter(e.target.value)}
+            onChange={(e) => {
+              setRiskFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all bg-white"
           >
-            <option value="all">All Risk Levels</option>
-            <option value="low">Low Risk</option>
-            <option value="medium">Medium Risk</option>
-            <option value="high">High Risk</option>
-            <option value="very-high">Very High Risk</option>
+            <option value="all">All Risk Profiles</option>
+            <option value="Conservative">Conservative</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Aggressive">Aggressive</option>
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
-          {savedViews.map((view) => (
-            <button
-              key={view.id}
-              onClick={() => {
-                setActiveView(view.id);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                activeView === view.id
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:border-brand hover:text-brand'
-              }`}
-            >
-              {view.label}
-              <span className={`ml-2 ${
-                activeView === view.id ? 'text-blue-200' : 'text-gray-500'
-              }`}>
-                ({view.count})
-              </span>
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Showing {clients.length} of {totalClients} clients
+          </p>
         </div>
 
         <Card padding="sm">
           <DataTable
             columns={columns}
-            data={paginatedClients}
-            onRowClick={(client) => navigate(`/clients/${client.id}`)}
-            rowClassName={(client) =>
-              client.status === 'overdue' ? 'bg-red-50 hover:bg-red-100' : ''
-            }
+            data={clients}
+            onRowClick={(client) => navigate(`/clients/${client.client_id}`)}
             emptyMessage="No clients found matching your criteria"
           />
           
-          {filteredClients.length > 0 && (
+          {totalClients > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
-              totalItems={filteredClients.length}
+              totalItems={totalClients}
               itemsPerPage={itemsPerPage}
             />
           )}

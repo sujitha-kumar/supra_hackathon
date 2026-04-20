@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout';
 import { Badge, Card, Button } from '../components/ui';
-import { AllocationGrid, PortfolioPerformanceChart, QuickActions, RecommendedActions } from '../components/client';
-import { extendedMockClients } from '../data/extendedMockClients';
-import { mockPortfolioData } from '../data/mockPortfolio';
+import { QuickActions, RecommendedActions, AllocationGrid, PortfolioPerformanceChart } from '../components/client';
+import { useClientProfile, useClientPortfolio, useClientPerformance } from '../hooks/useClients';
+import type { Client } from '../types/api';
 
 export const ClientProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'holdings' | 'transactions' | 'notes'>('overview');
 
-  const client = extendedMockClients.find(c => c.id === Number(id)) || extendedMockClients[0];
-  const portfolio = mockPortfolioData;
+  const { data: client, isLoading, error } = useClientProfile(Number(id));
+  const { data: portfolio, isLoading: portfolioLoading } = useClientPortfolio(Number(id));
+  const { data: performance, isLoading: performanceLoading } = useClientPerformance(Number(id));
 
   const getInitials = (name: string) => {
     return name
@@ -22,16 +23,65 @@ export const ClientProfilePage: React.FC = () => {
       .toUpperCase();
   };
 
-  const getRiskBadge = (riskLevel: string) => {
+  const getRiskBadge = (riskProfile: Client['risk_profile']) => {
     const variants = {
-      'low': { variant: 'success' as const, label: 'Low Risk' },
-      'medium': { variant: 'warning' as const, label: 'Medium Risk' },
-      'high': { variant: 'danger' as const, label: 'High Risk' },
-      'very-high': { variant: 'danger' as const, label: 'Very High' },
+      'Conservative': { variant: 'success' as const, label: 'Conservative' },
+      'Moderate': { variant: 'warning' as const, label: 'Moderate' },
+      'Aggressive': { variant: 'danger' as const, label: 'Aggressive' },
     };
-    const config = variants[riskLevel as keyof typeof variants];
+    const config = variants[riskProfile];
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  if (isLoading) {
+    return (
+      <PageWrapper>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading client profile...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (error || !client) {
+    return (
+      <PageWrapper>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Profile</h2>
+            <p className="text-gray-600">{error instanceof Error ? error.message : 'Client not found'}</p>
+            <Button className="mt-4" onClick={() => navigate('/clients')}>Back to Clients</Button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview' },
@@ -67,11 +117,7 @@ export const ClientProfilePage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
-                  <div className="flex items-center gap-2">
-                    {client.tags.map((tag) => (
-                      <Badge key={tag} variant="brand" size="sm">{tag}</Badge>
-                    ))}
-                  </div>
+                  <Badge variant="brand" size="sm">{client.segment}</Badge>
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-4">
@@ -91,13 +137,13 @@ export const ClientProfilePage: React.FC = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <span className="text-sm">{client.company}</span>
+                    <span className="text-sm">PAN: {client.pan}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm">Last contact: {client.lastContact}</span>
+                    <span className="text-sm">Last contact: {formatDate(client.last_contacted_at)}</span>
                   </div>
                 </div>
               </div>
@@ -108,25 +154,20 @@ export const ClientProfilePage: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Total AUM</p>
-                    <p className="text-3xl font-bold text-gray-900">{portfolio.totalAUM}</p>
-                    <p className={`text-sm font-medium ${
-                      portfolio.ytdReturn >= 0 ? 'text-success' : 'text-danger'
-                    }`}>
-                      {portfolio.ytdReturn >= 0 ? '+' : ''}{portfolio.ytdReturn}% YTD
-                    </p>
+                    <p className="text-3xl font-bold text-gray-900">{formatCurrency(client.total_aum)}</p>
                   </div>
                   <div className="pt-3 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-gray-600">Risk Score</p>
-                      {getRiskBadge(portfolio.riskLevel)}
+                      <p className="text-sm text-gray-600">Risk Profile</p>
+                      {getRiskBadge(client.risk_profile)}
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-success via-warning to-danger h-2 rounded-full"
-                        style={{ width: `${portfolio.riskScore}%` }}
+                        style={{ width: `${client.risk_score * 10}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{portfolio.riskScore}/100</p>
+                    <p className="text-xs text-gray-500 mt-1">{client.risk_score}/10</p>
                   </div>
                 </div>
               </Card>
@@ -144,9 +185,9 @@ export const ClientProfilePage: React.FC = () => {
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Copilot Brief</h3>
               <p className="text-gray-700 mb-4">
-                {client.name} is a {client.tags.includes('Premium') ? 'premium' : 'valued'} client with strong portfolio performance. 
-                Current allocation is well-balanced but consider rebalancing equity exposure. 
-                Recommend scheduling a quarterly review to discuss tax optimization strategies and upcoming investment opportunities.
+                {client.name} is a {client.segment} segment client with a {client.risk_profile.toLowerCase()} risk profile. 
+                Current AUM: {formatCurrency(client.total_aum)}. Risk score: {client.risk_score}/10. 
+                Recommend regular portfolio reviews and risk assessment updates.
               </p>
               <div className="flex items-center gap-3">
                 <Button variant="primary" size="sm">
@@ -181,8 +222,34 @@ export const ClientProfilePage: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <AllocationGrid allocations={portfolio.allocations} />
-              <PortfolioPerformanceChart data={portfolio.performance} />
+              {portfolioLoading ? (
+                <Card padding="md">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                  </div>
+                </Card>
+              ) : portfolio ? (
+                <>
+                  <AllocationGrid allocations={portfolio.allocations} />
+                  {performanceLoading ? (
+                    <Card padding="md">
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                      </div>
+                    </Card>
+                  ) : performance?.data && performance.data.length > 0 ? (
+                    <PortfolioPerformanceChart data={performance.data} />
+                  ) : (
+                    <Card padding="md">
+                      <p className="text-gray-600">No performance data available</p>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <Card padding="md">
+                  <p className="text-gray-600">No portfolio data available</p>
+                </Card>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -196,28 +263,7 @@ export const ClientProfilePage: React.FC = () => {
           <Card padding="md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Portfolio Holdings</h3>
             <div className="space-y-3">
-              {portfolio.holdings.map((holding) => (
-                <div
-                  key={holding.id}
-                  className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:shadow-sm transition-shadow"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{holding.name}</p>
-                    <p className="text-sm text-gray-600">{holding.type}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{holding.value}</p>
-                    <p className={`text-sm font-medium ${
-                      holding.return >= 0 ? 'text-success' : 'text-danger'
-                    }`}>
-                      {holding.return >= 0 ? '+' : ''}{holding.return}%
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">{holding.allocation}% of portfolio</p>
-                  </div>
-                </div>
-              ))}
+              <p className="text-gray-600">Holdings data will be loaded from separate endpoint.</p>
             </div>
           </Card>
         )}
@@ -226,47 +272,7 @@ export const ClientProfilePage: React.FC = () => {
           <Card padding="md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
             <div className="space-y-3">
-              {portfolio.transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 rounded-xl border border-gray-200"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      transaction.type === 'buy' ? 'bg-green-100' :
-                      transaction.type === 'sell' ? 'bg-red-100' :
-                      'bg-blue-100'
-                    }`}>
-                      <svg className={`w-5 h-5 ${
-                        transaction.type === 'buy' ? 'text-success' :
-                        transaction.type === 'sell' ? 'text-danger' :
-                        'text-brand'
-                      }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {transaction.type === 'buy' && (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        )}
-                        {transaction.type === 'sell' && (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        )}
-                        {transaction.type === 'dividend' && (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        )}
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 capitalize">{transaction.type}</p>
-                      <p className="text-sm text-gray-600">{transaction.asset}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{transaction.amount}</p>
-                    <p className="text-sm text-gray-600">{transaction.date}</p>
-                  </div>
-                  <Badge variant={transaction.status === 'completed' ? 'success' : 'warning'} size="sm">
-                    {transaction.status}
-                  </Badge>
-                </div>
-              ))}
+              <p className="text-gray-600">Transactions data will be loaded from separate endpoint.</p>
             </div>
           </Card>
         )}

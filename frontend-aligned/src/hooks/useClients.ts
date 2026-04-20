@@ -1,64 +1,54 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { clientService, type Client } from '../services/clientService';
-import { useClientStore } from '../store';
+import { useQuery } from '@tanstack/react-query';
+import { clientService, type ClientsQueryParams } from '../services/clientService';
 
-export const useClients = () => {
-  const queryClient = useQueryClient();
-  const { setClients, setLoading, setError } = useClientStore();
-
-  const query = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      setLoading(true);
-      try {
-        const clients = await clientService.getAll();
-        setClients(clients);
-        return clients;
-      } catch (error) {
-        setError('Failed to fetch clients');
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
+export const useClients = (params?: ClientsQueryParams) => {
+  return useQuery({
+    queryKey: ['clients', params],
+    queryFn: () => clientService.getAll(params),
+    staleTime: 30000,
   });
-
-  const createMutation = useMutation({
-    mutationFn: (client: Omit<Client, 'id'>) => clientService.create(client),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Client> }) =>
-      clientService.update(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => clientService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
-  });
-
-  return {
-    clients: query.data || [],
-    isLoading: query.isLoading,
-    error: query.error,
-    createClient: createMutation.mutate,
-    updateClient: updateMutation.mutate,
-    deleteClient: deleteMutation.mutate,
-  };
 };
 
-export const useClient = (id: string) => {
+export const useClient = (id: number) => {
   return useQuery({
     queryKey: ['client', id],
     queryFn: () => clientService.getById(id),
     enabled: !!id,
+  });
+};
+
+export const useClientProfile = (id: number) => {
+  return useQuery({
+    queryKey: ['client', id, 'profile'],
+    queryFn: () => clientService.getProfile(id),
+    enabled: !!id,
+    staleTime: 30000,
+  });
+};
+
+export const useClientPortfolio = (id: number) => {
+  return useQuery({
+    queryKey: ['client', id, 'portfolio'],
+    queryFn: () => clientService.getPortfolio(id),
+    enabled: !!id,
+    staleTime: 30000,
+  });
+};
+
+export const useClientPerformance = (id: number) => {
+  return useQuery({
+    queryKey: ['client', id, 'performance'],
+    queryFn: () => clientService.getPerformance(id),
+    enabled: !!id,
+    staleTime: 30000,
+  });
+};
+
+export const useClientInteractions = (id: number, limit: number = 10) => {
+  return useQuery({
+    queryKey: ['client', id, 'interactions', limit],
+    queryFn: () => clientService.getInteractions(id, limit),
+    enabled: !!id,
+    staleTime: 30000,
   });
 };

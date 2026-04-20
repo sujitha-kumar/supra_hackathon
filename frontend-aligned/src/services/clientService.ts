@@ -1,37 +1,85 @@
 import { apiClient } from '../lib/axios';
+import type { Client } from '../types/api';
 
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-  status: string;
-  aum: number;
-  riskTolerance: string;
+export interface ClientsQueryParams {
+  segment?: string;
+  risk_profile?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ClientsResponse {
+  clients: Client[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PortfolioResponse {
+  portfolio_id: number;
+  client_id: number;
+  total_value: number;
+  allocations: {
+    equity: number;
+    debt: number;
+    gold: number;
+    cash: number;
+  };
+  last_updated: string;
+}
+
+export interface PerformanceData {
+  month: string;
+  value: number;
+}
+
+export interface PerformanceResponse {
+  data: PerformanceData[];
+}
+
+export interface Interaction {
+  interaction_id: number;
+  client_id: number;
+  type: 'Call' | 'Email' | 'Meeting';
+  notes: string;
+  created_at: string;
+}
+
+export interface InteractionsResponse {
+  interactions: Interaction[];
 }
 
 export const clientService = {
-  getAll: async (): Promise<Client[]> => {
-    const response = await apiClient.get('/clients');
+  getAll: async (params?: ClientsQueryParams): Promise<ClientsResponse> => {
+    const response = await apiClient.get<ClientsResponse>('/clients', { params });
     return response.data;
   },
 
-  getById: async (id: string): Promise<Client> => {
-    const response = await apiClient.get(`/clients/${id}`);
+  getById: async (id: number): Promise<Client> => {
+    const response = await apiClient.get<Client>(`/clients/${id}`);
     return response.data;
   },
 
-  create: async (client: Omit<Client, 'id'>): Promise<Client> => {
-    const response = await apiClient.post('/clients', client);
+  getProfile: async (id: number): Promise<Client> => {
+    const response = await apiClient.get<Client>(`/clients/${id}/profile`);
     return response.data;
   },
 
-  update: async (id: string, updates: Partial<Client>): Promise<Client> => {
-    const response = await apiClient.patch(`/clients/${id}`, updates);
+  getPortfolio: async (id: number): Promise<PortfolioResponse> => {
+    const response = await apiClient.get<PortfolioResponse>(`/clients/${id}/portfolio`);
     return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/clients/${id}`);
+  getPerformance: async (id: number): Promise<PerformanceResponse> => {
+    const response = await apiClient.get<PerformanceResponse>(`/clients/${id}/performance`);
+    return response.data;
+  },
+
+  getInteractions: async (id: number, limit: number = 10): Promise<InteractionsResponse> => {
+    const response = await apiClient.get<InteractionsResponse>(`/clients/${id}/interactions`, {
+      params: { limit },
+    });
+    return response.data;
   },
 };
