@@ -1,0 +1,14 @@
+{
+  "name": "hackathon-app-root",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c green,blue \"npm --prefix backend-ts run dev\" \"npm --prefix frontend-aligned run dev -- --force\"",
+    "dev:backend": "npm --prefix backend-ts run dev",
+    "dev:frontend": "npm --prefix frontend-aligned run dev -- --force",
+    "build": "npm --prefix backend-ts run build && npm --prefix frontend-aligned run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
