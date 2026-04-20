@@ -32,7 +32,7 @@ function validateEnv(): EnvConfig {
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
-    CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174',
   };
 }
 

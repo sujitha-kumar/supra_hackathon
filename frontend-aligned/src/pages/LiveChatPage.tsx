@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChatMessageList, ChatInput, SuggestedActions, ClientContextPanel } from '../components/chat';
 import type { ClientContextData, PortfolioContextData } from '../components/chat/ClientContextPanel';
 import { useClientProfile, useClientPortfolio } from '../hooks/useClients';
@@ -24,6 +25,9 @@ export const LiveChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAITyping, setIsAITyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const location = useLocation();
+  const hasAutoSentInitial = useRef(false);
 
   const { data: clientProfile } = useClientProfile(DEMO_CLIENT_ID);
   const { data: portfolioData } = useClientPortfolio(DEMO_CLIENT_ID);
@@ -54,22 +58,22 @@ export const LiveChatPage: React.FC = () => {
           {
             id: '1',
             type: 'Equity',
-            allocation: portfolioData.equity_pct,
-            value: formatINR(portfolioData.total_value * portfolioData.equity_pct / 100),
+            allocation: portfolioData.allocations.equity,
+            value: formatINR(portfolioData.total_value * portfolioData.allocations.equity / 100),
             return: 12.3,
           },
           {
             id: '2',
             type: 'Debt',
-            allocation: portfolioData.debt_pct,
-            value: formatINR(portfolioData.total_value * portfolioData.debt_pct / 100),
+            allocation: portfolioData.allocations.debt,
+            value: formatINR(portfolioData.total_value * portfolioData.allocations.debt / 100),
             return: 7.1,
           },
           {
             id: '3',
             type: 'Gold / Alt',
-            allocation: portfolioData.alt_pct,
-            value: formatINR(portfolioData.total_value * portfolioData.alt_pct / 100),
+            allocation: portfolioData.allocations.gold,
+            value: formatINR(portfolioData.total_value * portfolioData.allocations.gold / 100),
             return: 5.4,
           },
         ],
@@ -88,6 +92,16 @@ export const LiveChatPage: React.FC = () => {
     { id: '3', label: 'Rebalancing', prompt: 'Should we rebalance this portfolio?' },
     { id: '4', label: 'Tax Strategy', prompt: 'What tax optimization strategies can we implement?' },
   ];
+
+  useEffect(() => {
+    const state = (location.state ?? {}) as { initialQuery?: string; intent?: string };
+    const initialQuery = state.initialQuery?.trim();
+    if (!initialQuery) return;
+    if (hasAutoSentInitial.current) return;
+
+    hasAutoSentInitial.current = true;
+    void handleSendMessage(initialQuery);
+  }, [location.state]);
 
   const handleSendMessage = async (content: string) => {
     const userMessage: ChatMessage = {

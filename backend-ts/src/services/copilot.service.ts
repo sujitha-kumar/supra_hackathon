@@ -90,6 +90,127 @@ SUGGESTED ACTION: [one specific actionable recommendation]`;
     };
   }
 
+  async generateClientInsightsP0P6(
+    context: ClientContext,
+    _query: string
+  ): Promise<string> {
+    const client = context.client;
+    const portfolio = context.portfolio;
+    const interactions = context.interactions;
+
+    const allocationSummary = portfolio
+      ? `Equity ${portfolio.equity_pct}%, Debt ${portfolio.debt_pct}%, Gold/Alt ${portfolio.alt_pct}%, Cash ${portfolio.cash_pct}%`
+      : 'Portfolio data unavailable';
+
+    const lastInteraction = interactions[0]
+      ? `${interactions[0].type} on ${new Date(interactions[0].created_at).toLocaleDateString('en-IN')}: ${interactions[0].notes}`
+      : 'No recent interactions recorded';
+
+    const daysSinceContact = client.last_contacted_at
+      ? Math.floor((Date.now() - new Date(client.last_contacted_at).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    const keyRisks: string[] = [];
+    if (client.risk_score >= 8) keyRisks.push(`High risk score ${client.risk_score}/10 (${client.risk_profile})`);
+    if (portfolio && portfolio.cash_pct > 20) keyRisks.push(`Elevated cash ${portfolio.cash_pct}% (deployment drag)`);
+    if (daysSinceContact !== null && daysSinceContact > 30) keyRisks.push(`No contact in ${daysSinceContact} days (retention risk)`);
+    if (!portfolio) keyRisks.push('Missing portfolio data (limits risk and allocation checks)');
+
+    const riskAlignmentCheck = portfolio
+      ? `Client risk profile: ${client.risk_profile} (score ${client.risk_score}/10). Allocation on record: ${allocationSummary}.`
+      : `Client risk profile: ${client.risk_profile} (score ${client.risk_score}/10). Allocation unavailable.`;
+
+    const fiRecommendations: string[] = [];
+    if (portfolio && portfolio.cash_pct > 20) {
+      fiRecommendations.push(`Create a cash deployment plan for ~${portfolio.cash_pct}% cash via STP over 4–8 weeks`);
+    }
+    if (client.risk_score >= 8) {
+      fiRecommendations.push('Run an updated risk suitability check before any incremental equity exposure');
+    }
+    if (daysSinceContact !== null && daysSinceContact > 30) {
+      fiRecommendations.push('Schedule a structured review touchpoint (agenda: goals, allocation, liquidity, next actions)');
+    }
+
+    const suggestedActions: string[] = [];
+    if (fiRecommendations.length > 0) {
+      suggestedActions.push(...fiRecommendations.slice(0, 2));
+    } else {
+      suggestedActions.push(
+        `No action trigger detected from provided fields (risk_score ${client.risk_score}/10${daysSinceContact !== null ? `, last_contacted ${daysSinceContact}d` : ''}${portfolio ? `, cash ${portfolio.cash_pct}%` : ''}); provide target allocation/goals/liquidity to refine next steps`
+      );
+    }
+
+    const productRecommendations: string[] = [];
+    if (portfolio && portfolio.cash_pct > 20) {
+      productRecommendations.push('STP from liquid fund into core MF allocation (phased)');
+    }
+    if (client.segment === 'UHNI' && client.total_aum > 10_000_000) {
+      productRecommendations.push('Structured/premium solutions shortlist aligned to risk profile');
+    }
+
+    const supportActions: string[] = [];
+    if (daysSinceContact !== null && daysSinceContact > 30) {
+      supportActions.push('Draft a client-ready review note and meeting invite with 3-point agenda');
+    }
+    supportActions.push('Pull last 5 interactions and confirm pending client requests before outreach');
+
+    const marketSummary =
+      'No market data provided in the client dataset; market view omitted to avoid speculation.';
+
+    const impactOnPortfolio = portfolio
+      ? `Without market inputs, focus on internal drivers: allocation mix (${allocationSummary}) and any cash drag.`
+      : 'Portfolio impact cannot be assessed because portfolio allocation is unavailable.';
+
+    const recentTransactions = 'No transaction feed provided in the dataset.';
+    const allocationImpact = portfolio ? `Current allocation: ${allocationSummary}.` : 'Allocation unavailable.';
+    const rebalancingNeeds = portfolio
+      ? portfolio.cash_pct > 20
+        ? `Yes — prioritize deploying excess cash; rebalance only after confirming risk suitability.`
+        : 'No clear rebalance trigger detected from provided allocation alone.'
+      : 'Cannot assess rebalancing without portfolio allocation data.';
+
+    const detectedSignals = daysSinceContact !== null && daysSinceContact > 60 ? 'Prolonged inactivity / low engagement.' : 'No explicit life-event signals in data.';
+    const financialImpact = daysSinceContact !== null && daysSinceContact > 60 ? 'Potential attrition / missed wallet-share opportunity.' : 'Not enough data to quantify.';
+    const suggestedAdjustments = daysSinceContact !== null && daysSinceContact > 60 ? 'Reconfirm goals, horizon, and liquidity; refresh IPS notes.' : 'None from provided data.';
+
+    const lastActions = lastInteraction;
+    const behavioralInsight = daysSinceContact !== null ? `Last contacted ${daysSinceContact} days ago.` : 'Last contacted date not available.';
+    const riskGoalImpact = daysSinceContact !== null && daysSinceContact > 30 ? 'Follow-up delay increases retention risk; may affect execution of next portfolio actions.' : 'No immediate behavior risk detected from contact cadence.';
+
+    return [
+      'P0: User Risk & Portfolio Overview',
+      `- Risk Profile: ${client.risk_profile} (score ${client.risk_score}/10)`,
+      `- Allocation Summary: ${allocationSummary}`,
+      '- Performance Analysis: Not available in provided data',
+      `- Risk Alignment Check: ${riskAlignmentCheck}`,
+      `- Key Risks: ${keyRisks.length ? keyRisks.join('; ') : 'No material risks detected from provided fields'}`,
+      'P1: Market Intelligence',
+      `- Market Summary: ${marketSummary}`,
+      `- Impact on Portfolio: ${impactOnPortfolio}`,
+      `- FI Recommendations: ${fiRecommendations.length ? fiRecommendations.join('; ') : 'No market-based recommendations (no market data provided)'}`,
+      `- Suggested Actions: ${suggestedActions.join('; ')}`,
+      'P2: Cash Flow & External Updates',
+      `- Recent Transactions: ${recentTransactions}`,
+      `- Allocation Impact: ${allocationImpact}`,
+      `- Rebalancing Needs: ${rebalancingNeeds}`,
+      'P3: Life Event Tracking',
+      `- Detected Signals: ${detectedSignals}`,
+      `- Financial Impact: ${financialImpact}`,
+      `- Suggested Adjustments: ${suggestedAdjustments}`,
+      'P4: Recent User Behavior',
+      `- Last Actions: ${lastActions}`,
+      `- Behavioral Insight: ${behavioralInsight}`,
+      `- Risk/Goal Impact: ${riskGoalImpact}`,
+      'P5: Product Recommendations',
+      `- Recommended Products: ${productRecommendations.length ? productRecommendations.join('; ') : 'None suggested from provided data'}`,
+      `- Rationale: Based on client segment (${client.segment}), risk profile (${client.risk_profile}), and observed allocation/cash position`,
+      `- Priority: ${portfolio && portfolio.cash_pct > 20 ? 'high' : 'medium'}`,
+      'P6: Support & Assistance',
+      `- Suggested Support Actions: ${supportActions.join('; ')}`,
+      '- Platform Guidance: Use chat follow-ups to request: target allocation, goals, upcoming liquidity needs, and any product constraints',
+    ].join('\n');
+  }
+
   async generateTaskSuggestions(clientId: number): Promise<TaskSuggestionResponse> {
     const client = await this.clientRepository.findById(clientId);
     if (!client) {
@@ -173,7 +294,7 @@ Return ONLY valid JSON, no markdown, no extra text:
     }
 
     // Sort: high priority first, then risk_alerts, then follow_ups
-    const sorted = insights.sort((a, b) => {
+    const sorted = [...insights].sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });

@@ -1,11 +1,9 @@
 import { supabase } from '../config/supabase';
 import { ChatSession, ChatMessage, CreateSessionRequest } from '../types';
 import { formatISOTimestamp } from '../utils/formatters';
-import { v4 as uuidv4 } from 'uuid';
 
 export class ChatRepository {
   async createSession(sessionData: CreateSessionRequest): Promise<ChatSession> {
-    const id = uuidv4();
     const now = new Date();
 
     let clientName: string | undefined;
@@ -24,13 +22,8 @@ export class ChatRepository {
     const { data, error } = await supabase
       .from('chat_sessions')
       .insert({
-        id,
         client_id: sessionData.client_id,
-        title,
         created_at: now.toISOString(),
-        is_pinned: false,
-        summary: '',
-        tags: [],
       })
       .select()
       .single();
@@ -40,22 +33,22 @@ export class ChatRepository {
     }
 
     return {
-      id: data.id,
-      title: data.title,
+      id: String(data.session_id),
+      title,
       clientName,
       timestamp: formatISOTimestamp(new Date(data.created_at)),
       messageCount: 0,
-      isPinned: data.is_pinned,
-      summary: data.summary,
+      isPinned: false,
+      summary: '',
       messages: [],
-      tags: data.tags,
+      tags: [],
     };
   }
 
   async findAllSessions(): Promise<ChatSession[]> {
     const { data, error } = await supabase
       .from('chat_sessions')
-      .select('*, clients(name)')
+      .select('session_id, client_id, created_at, clients(name)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -67,19 +60,22 @@ export class ChatRepository {
         const { count } = await supabase
           .from('chat_messages')
           .select('*', { count: 'exact', head: true })
-          .eq('session_id', row.id);
+          .eq('session_id', row.session_id);
 
-        const clients = row.clients as Record<string, unknown> | null;
+        const clients = (row as unknown as { clients?: { name?: string } | Array<{ name?: string }> }).clients;
+        const clientName = Array.isArray(clients) ? clients[0]?.name : clients?.name;
 
         return {
-          id: row.id,
-          title: row.title,
-          clientName: clients ? (clients.name as string) : undefined,
+          id: String(row.session_id),
+          title: `Chat ${new Date(row.created_at).toLocaleDateString('en-IN')}`,
+          clientName,
           timestamp: formatISOTimestamp(new Date(row.created_at)),
           messageCount: count || 0,
-          isPinned: row.is_pinned,
-          summary: row.summary,
-          tags: row.tags,
+          isPinned: !!(row as Record<string, unknown>).is_pinned,
+          summary: (row as Record<string, unknown>).summary ? String((row as Record<string, unknown>).summary) : '',
+          tags: Array.isArray((row as Record<string, unknown>).tags)
+            ? ((row as Record<string, unknown>).tags as string[])
+            : [],
         };
       })
     );
@@ -88,10 +84,12 @@ export class ChatRepository {
   }
 
   async findSessionMessages(sessionId: string): Promise<ChatMessage[]> {
+    const numericSessionId = Number(sessionId);
+
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
-      .eq('session_id', sessionId)
+      .eq('session_id', numericSessionId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -99,9 +97,9 @@ export class ChatRepository {
     }
 
     return (data || []).map((row) => ({
-      id: row.id,
+      id: String(row.message_id),
       content: row.content,
-      sender: row.sender,
+      sender: (row.sender ?? row.role) === 'assistant' ? 'ai' : (row.sender ?? row.role),
       timestamp: formatISOTimestamp(new Date(row.created_at)),
     }));
   }
@@ -111,16 +109,15 @@ export class ChatRepository {
     content: string,
     sender: 'user' | 'ai'
   ): Promise<ChatMessage> {
-    const id = uuidv4();
+    const numericSessionId = Number(sessionId);
     const now = new Date();
 
     const { data, error } = await supabase
       .from('chat_messages')
       .insert({
-        id,
-        session_id: sessionId,
+        session_id: numericSessionId,
         content,
-        sender,
+        role: sender === 'ai' ? 'assistant' : sender,
         created_at: now.toISOString(),
       })
       .select()
@@ -131,18 +128,19 @@ export class ChatRepository {
     }
 
     return {
-      id: data.id,
+      id: String(data.message_id),
       content: data.content,
-      sender: data.sender,
+      sender: (data.sender ?? data.role) === 'assistant' ? 'ai' : (data.sender ?? data.role),
       timestamp: formatISOTimestamp(new Date(data.created_at)),
     };
   }
 
   async sessionExists(sessionId: string): Promise<boolean> {
+    const numericSessionId = Number(sessionId);
     const { data, error } = await supabase
       .from('chat_sessions')
-      .select('id')
-      .eq('id', sessionId)
+      .select('session_id')
+      .eq('session_id', numericSessionId)
       .single();
 
     if (error && error.code !== 'PGRST116') {

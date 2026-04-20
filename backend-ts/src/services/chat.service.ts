@@ -87,6 +87,19 @@ export class ChatService {
         this.clientRepository.getInteractions(messageData.client_id, 5),
       ]);
 
+      const normalized = messageData.message.toLowerCase();
+      const isClientsIntent =
+        normalized === 'clients' ||
+        normalized.startsWith('clients ') ||
+        normalized.includes(' clients ');
+
+      if (isClientsIntent) {
+        return await this.copilotService.generateClientInsightsP0P6(
+          { client, portfolio, interactions },
+          messageData.message
+        );
+      }
+
       const copilotResponse = await this.copilotService.generateResponse(
         { client, portfolio, interactions },
         messageData.message

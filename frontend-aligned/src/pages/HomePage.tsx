@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout';
 import { Button } from '../components/ui';
 import { RecentClientsTable, QuickActionsPanel, AIClientBrief } from '../components/dashboard';
@@ -7,6 +8,7 @@ import { mockClients } from '../data/mockClients';
 export const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const navigate = useNavigate();
 
   const filters = [
     { id: 'all', label: 'All Clients' },
@@ -20,6 +22,24 @@ export const HomePage: React.FC = () => {
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const handleAskAI = () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    const normalized = query.toLowerCase();
+    const isClientsIntent =
+      normalized === 'clients' ||
+      normalized.startsWith('clients ') ||
+      normalized.includes(' clients ');
+
+    if (isClientsIntent) {
+      navigate('/chat', { state: { initialQuery: query, intent: 'clients' } });
+      return;
+    }
+
+    navigate('/chat', { state: { initialQuery: query } });
   };
 
   return (
@@ -40,6 +60,12 @@ export const HomePage: React.FC = () => {
                 placeholder="Search clients, projects, or tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAskAI();
+                  }
+                }}
                 className="w-full px-6 py-4 pl-12 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-lg"
               />
               <svg
@@ -56,7 +82,7 @@ export const HomePage: React.FC = () => {
                 />
               </svg>
             </div>
-            <Button variant="primary" size="lg" className="px-8">
+            <Button variant="primary" size="lg" className="px-8" onClick={handleAskAI}>
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
