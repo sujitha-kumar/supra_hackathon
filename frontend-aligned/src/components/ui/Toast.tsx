@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { registerGlobalToastHandler } from '../../lib/toastEvents';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -38,6 +39,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, duration);
     }
   }, []);
+
+  useEffect(() => {
+    registerGlobalToastHandler((message, type) => showToast(message, type));
+  }, [showToast]);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

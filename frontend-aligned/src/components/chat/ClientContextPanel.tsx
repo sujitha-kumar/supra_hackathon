@@ -1,30 +1,44 @@
 import React from 'react';
 import { Card, Badge } from '../ui';
-import type { ExtendedClient } from '../../data/extendedMockClients';
-import type { PortfolioData } from '../../data/mockPortfolio';
+
+interface Holding {
+  id: string;
+  type: string;
+  allocation: number;
+  value: string;
+  return: number;
+}
+
+export interface ClientContextData {
+  name: string;
+  company: string;
+  status: 'active' | 'inactive' | 'pending' | 'overdue';
+  risk: 'low' | 'medium' | 'high' | 'very-high';
+  lastContact: string;
+  projects: number;
+}
+
+export interface PortfolioContextData {
+  holdings: Holding[];
+  totalAUM: string;
+  ytdReturn: number;
+}
 
 interface ClientContextPanelProps {
-  client: ExtendedClient;
-  portfolio: PortfolioData;
+  client: ClientContextData;
+  portfolio: PortfolioContextData;
 }
 
 export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, portfolio }) => {
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   return (
     <div className="w-80 border-l border-gray-200 bg-gray-50 p-6 space-y-6 overflow-y-auto">
       <Card padding="md">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-gradient-to-br from-brand to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-semibold text-lg">
-              {getInitials(client.name)}
-            </span>
+            <span className="text-white font-semibold text-lg">{getInitials(client.name)}</span>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">{client.name}</h3>
@@ -41,7 +55,10 @@ export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, 
           </div>
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Risk Level</span>
-            <Badge variant={client.risk === 'low' ? 'success' : client.risk === 'medium' ? 'warning' : 'danger'} size="sm">
+            <Badge
+              variant={client.risk === 'low' ? 'success' : client.risk === 'medium' ? 'warning' : 'danger'}
+              size="sm"
+            >
               {client.risk}
             </Badge>
           </div>
@@ -79,9 +96,7 @@ export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, 
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-900">{holding.value}</p>
-                <p className={`text-xs font-medium ${
-                  holding.return >= 0 ? 'text-success' : 'text-danger'
-                }`}>
+                <p className={`text-xs font-medium ${holding.return >= 0 ? 'text-success' : 'text-danger'}`}>
                   {holding.return >= 0 ? '+' : ''}{holding.return}%
                 </p>
               </div>
@@ -102,14 +117,12 @@ export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, 
           </div>
           <div className="flex items-center justify-between">
             <span className="text-gray-600">YTD Return</span>
-            <span className={`font-semibold ${
-              portfolio.ytdReturn >= 0 ? 'text-success' : 'text-danger'
-            }`}>
+            <span className={`font-semibold ${portfolio.ytdReturn >= 0 ? 'text-success' : 'text-danger'}`}>
               {portfolio.ytdReturn >= 0 ? '+' : ''}{portfolio.ytdReturn}%
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-600">Projects</span>
+            <span className="text-gray-600">Active Tasks</span>
             <span className="font-semibold text-gray-900">{client.projects}</span>
           </div>
         </div>

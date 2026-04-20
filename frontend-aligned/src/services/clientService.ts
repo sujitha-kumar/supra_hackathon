@@ -50,6 +50,23 @@ export interface InteractionsResponse {
   interactions: Interaction[];
 }
 
+export type BriefInsightPriority = 'high' | 'medium' | 'low';
+
+export interface BriefInsight {
+  id: number;
+  text: string;
+  priority: BriefInsightPriority;
+}
+
+export interface ClientBriefResponse {
+  client_id: number;
+  generated_at: string;
+  summary: string;
+  patterns: string[];
+  talking_points: string[];
+  insights: BriefInsight[];
+}
+
 export const clientService = {
   getAll: async (params?: ClientsQueryParams): Promise<ClientsResponse> => {
     const response = await apiClient.get<ClientsResponse>('/clients', { params });
@@ -80,6 +97,11 @@ export const clientService = {
     const response = await apiClient.get<InteractionsResponse>(`/clients/${id}/interactions`, {
       params: { limit },
     });
+    return response.data;
+  },
+
+  getBrief: async (id: number): Promise<ClientBriefResponse> => {
+    const response = await apiClient.get<ClientBriefResponse>(`/clients/${id}/brief`);
     return response.data;
   },
 };

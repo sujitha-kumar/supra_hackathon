@@ -52,3 +52,12 @@ export const useClientInteractions = (id: number, limit: number = 10) => {
     staleTime: 30000,
   });
 };
+
+export const useClientBrief = (id: number) => {
+  return useQuery({
+    queryKey: ['client', id, 'brief'],
+    queryFn: () => clientService.getBrief(id),
+    enabled: !!id,
+    staleTime: 30000,
+  });
+};

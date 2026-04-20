@@ -16,6 +16,7 @@ interface TaskFormProps {
   onChange: (field: keyof TaskFormData, value: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({
@@ -23,6 +24,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onChange,
   onSubmit,
   onCancel,
+  isSubmitting = false,
 }) => {
   return (
     <div className="space-y-6">
@@ -98,10 +100,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       </div>
 
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-        <Button variant="primary" onClick={onSubmit} className="flex-1">
-          Create Task
+        <Button variant="primary" onClick={onSubmit} className="flex-1" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating...' : 'Create Task'}
         </Button>
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
       </div>

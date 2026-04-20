@@ -1,36 +1,65 @@
 import { apiClient } from '../lib/axios';
 
-export interface ChatRequest {
-  message: string;
-  clientContext?: string;
-  sessionId?: string;
-}
+export type MessageSender = 'user' | 'ai';
 
-export interface ChatResponse {
+export interface ChatMessageResponse {
   id: string;
   content: string;
+  sender: MessageSender;
   timestamp: string;
-  metadata?: Record<string, unknown>;
+}
+
+export interface CreateSessionRequest {
+  client_id?: number;
+  title?: string;
+}
+
+export interface CreateSessionResponse {
+  id: string;
+  title: string;
+  clientName?: string;
+  timestamp: string;
+  messageCount: number;
+  isPinned: boolean;
+  summary: string;
+  tags: string[];
+  messages: ChatMessageResponse[];
+}
+
+export interface SendMessageRequest {
+  session_id: string;
+  message: string;
+  client_id?: number;
+}
+
+export interface SendMessageResponse {
+  userMessage: ChatMessageResponse;
+  aiResponse: ChatMessageResponse;
+}
+
+export interface SessionMessagesResponse {
+  sessionId: string;
+  messages: ChatMessageResponse[];
 }
 
 export const chatService = {
-  sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
-    const response = await apiClient.post('/chat/message', request);
+  createSession: async (request?: CreateSessionRequest): Promise<CreateSessionResponse> => {
+    const response = await apiClient.post<CreateSessionResponse>('/chat/session', request);
     return response.data;
   },
 
-  getHistory: async (sessionId: string): Promise<ChatResponse[]> => {
-    const response = await apiClient.get(`/chat/history/${sessionId}`);
+  sendMessage: async (request: SendMessageRequest): Promise<SendMessageResponse> => {
+    const response = await apiClient.post<SendMessageResponse>('/chat/message', request);
     return response.data;
   },
 
-  createSession: async (clientId?: string): Promise<{ sessionId: string }> => {
-    const response = await apiClient.post('/chat/session', { clientId });
+  getSessions: async (): Promise<{ sessions: Array<Omit<CreateSessionResponse, 'messages'>> }> => {
+    const response = await apiClient.get<{ sessions: Array<Omit<CreateSessionResponse, 'messages'>> }>('/chat/sessions');
     return response.data;
   },
 
-  getSessions: async (): Promise<Array<{ id: string; title: string; timestamp: string }>> => {
-    const response = await apiClient.get('/chat/sessions');
+  getSessionMessages: async (sessionId: string): Promise<SessionMessagesResponse> => {
+    const response = await apiClient.get<SessionMessagesResponse>(`/chat/sessions/${sessionId}/messages`);
     return response.data;
   },
 };

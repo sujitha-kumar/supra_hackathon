@@ -1,33 +1,58 @@
 import React, { useState } from 'react';
 import { SessionList, SessionDetail, PinnedOutputs } from '../components/history';
-import { mockSessions, mockPinnedOutputs } from '../data/mockSessions';
+import { ListSkeleton } from '../components/ui/Skeleton';
+import { useSessions, useSessionMessages } from '../hooks/useHistory';
 
 export const ConversationHistoryPage: React.FC = () => {
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(mockSessions[0]?.id || null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const { data: sessions = [], isLoading, isError } = useSessions();
+  const { data: messages = [], isLoading: isLoadingMessages } = useSessionMessages(selectedSessionId);
 
-  const selectedSession = mockSessions.find((s) => s.id === selectedSessionId);
-  const pinnedOutputsForSession = mockPinnedOutputs.filter(
-    (output) => output.sessionId === selectedSessionId
-  );
+  const selectedSession = selectedSessionId
+    ? sessions.find((s) => s.id === selectedSessionId) ?? null
+    : null;
+
+  const sessionWithMessages = selectedSession
+    ? { ...selectedSession, messages }
+    : null;
 
   return (
     <div className="flex h-screen bg-white">
       <div className="w-96 border-r border-gray-200">
-        <SessionList
-          sessions={mockSessions}
-          selectedSessionId={selectedSessionId}
-          onSelectSession={setSelectedSessionId}
-        />
+        {isLoading ? (
+          <div className="p-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Conversation History</h2>
+            <ListSkeleton items={5} />
+          </div>
+        ) : isError ? (
+          <div className="p-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Conversation History</h2>
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+              Failed to load sessions.
+            </p>
+          </div>
+        ) : (
+          <SessionList
+            sessions={sessions}
+            selectedSessionId={selectedSessionId}
+            onSelectSession={setSelectedSessionId}
+          />
+        )}
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedSession ? (
+        {isLoadingMessages && selectedSessionId ? (
+          <div className="p-6">
+            <ListSkeleton items={3} />
+          </div>
+        ) : sessionWithMessages ? (
           <>
-            {pinnedOutputsForSession.length > 0 && (
-              <PinnedOutputs outputs={pinnedOutputsForSession} />
+            {/* PinnedOutputs requires pinned flag — skip unless session is pinned */}
+            {sessionWithMessages.isPinned && (
+              <PinnedOutputs outputs={[]} />
             )}
             <div className="flex-1 overflow-hidden">
-              <SessionDetail session={selectedSession} />
+              <SessionDetail session={sessionWithMessages} />
             </div>
           </>
         ) : (
@@ -47,7 +72,11 @@ export const ConversationHistoryPage: React.FC = () => {
                 />
               </svg>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No Conversation Selected</h3>
-              <p className="text-gray-600">Select a conversation from the list to view details</p>
+              <p className="text-gray-600">
+                {sessions.length === 0
+                  ? 'No conversations yet. Start a chat to create history.'
+                  : 'Select a conversation from the list to view details.'}
+              </p>
             </div>
           </div>
         )}

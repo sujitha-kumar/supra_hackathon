@@ -19,7 +19,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   const filteredSessions = sessions.filter((session) => {
     const matchesSearch =
       session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      session.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (session.clientName ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.summary.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPinned = !filterPinned || session.isPinned;

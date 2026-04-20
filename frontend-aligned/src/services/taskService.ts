@@ -1,33 +1,48 @@
 import { apiClient } from '../lib/axios';
 import type { Task } from '../types/task';
 
+interface TasksApiResponse {
+  tasks: Array<Omit<Task, 'dueDate'> & { dueDate: string }>;
+  total: number;
+}
+
+interface CreateTaskPayload {
+  client_id?: number;
+  title: string;
+  description: string;
+  priority: Task['priority'];
+  due_date: string;
+  assignee?: string;
+  tags?: string[];
+}
+
+interface ToggleResponse {
+  id: string;
+  status: Task['status'];
+  updatedAt: string;
+}
+
+function toTask(raw: Omit<Task, 'dueDate'> & { dueDate: string }): Task {
+  return { ...raw, dueDate: new Date(raw.dueDate) };
+}
+
 export const taskService = {
   getAll: async (): Promise<Task[]> => {
-    const response = await apiClient.get('/tasks');
-    return response.data;
+    const response = await apiClient.get<TasksApiResponse>('/tasks');
+    return response.data.tasks.map(toTask);
   },
 
-  getById: async (id: string): Promise<Task> => {
-    const response = await apiClient.get(`/tasks/${id}`);
-    return response.data;
+  create: async (payload: CreateTaskPayload): Promise<Task> => {
+    const response = await apiClient.post<Omit<Task, 'dueDate'> & { dueDate: string }>('/tasks', payload);
+    return toTask(response.data);
   },
 
-  create: async (task: Omit<Task, 'id'>): Promise<Task> => {
-    const response = await apiClient.post('/tasks', task);
-    return response.data;
-  },
-
-  update: async (id: string, updates: Partial<Task>): Promise<Task> => {
-    const response = await apiClient.patch(`/tasks/${id}`, updates);
+  toggleComplete: async (id: string): Promise<ToggleResponse> => {
+    const response = await apiClient.patch<ToggleResponse>(`/tasks/${id}/toggle`);
     return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/tasks/${id}`);
-  },
-
-  toggleComplete: async (id: string): Promise<Task> => {
-    const response = await apiClient.patch(`/tasks/${id}/toggle`);
-    return response.data;
   },
 };

@@ -1,24 +1,10 @@
 import React from 'react';
 import { Card } from '../ui';
+import { useClientBrief } from '../../hooks/useClients';
 
 export const AIClientBrief: React.FC = () => {
-  const insights = [
-    {
-      id: 1,
-      text: 'Sarah Johnson from TechCorp is due for a follow-up call',
-      priority: 'high',
-    },
-    {
-      id: 2,
-      text: '3 clients have pending proposals awaiting response',
-      priority: 'medium',
-    },
-    {
-      id: 3,
-      text: 'Revenue increased by 23% compared to last month',
-      priority: 'low',
-    },
-  ];
+  const clientId = 1;
+  const { data, isLoading, error } = useClientBrief(clientId);
 
   return (
     <Card padding="md" className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
@@ -35,19 +21,33 @@ export const AIClientBrief: React.FC = () => {
       </div>
 
       <div className="space-y-3">
-        {insights.map((insight) => (
-          <div
-            key={insight.id}
-            className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200"
-          >
-            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-              insight.priority === 'high' ? 'bg-danger' :
-              insight.priority === 'medium' ? 'bg-warning' :
-              'bg-success'
-            }`} />
-            <p className="text-sm text-gray-700 flex-1">{insight.text}</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
           </div>
-        ))}
+        ) : error ? (
+          <div className="p-3 bg-white rounded-xl border border-gray-200">
+            <p className="text-sm text-gray-700">Failed to load AI insights.</p>
+          </div>
+        ) : data && data.insights.length > 0 ? (
+          data.insights.map((insight) => (
+            <div
+              key={insight.id}
+              className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200"
+            >
+              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                insight.priority === 'high' ? 'bg-danger' :
+                insight.priority === 'medium' ? 'bg-warning' :
+                'bg-success'
+              }`} />
+              <p className="text-sm text-gray-700 flex-1">{insight.text}</p>
+            </div>
+          ))
+        ) : (
+          <div className="p-3 bg-white rounded-xl border border-gray-200">
+            <p className="text-sm text-gray-700">No insights available.</p>
+          </div>
+        )}
       </div>
 
       <button className="mt-4 w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">

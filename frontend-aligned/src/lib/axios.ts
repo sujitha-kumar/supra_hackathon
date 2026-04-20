@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { emitToast } from './toastEvents';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -7,36 +8,48 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 });
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-storage');
-    if (token) {
+    const raw = localStorage.getItem('auth-storage');
+    if (raw) {
       try {
-        const authData = JSON.parse(token);
+        const authData = JSON.parse(raw) as { state?: { token?: string } };
         if (authData.state?.token) {
           config.headers.Authorization = `Bearer ${authData.state.token}`;
         }
-      } catch (error) {
-        console.error('Error parsing auth token:', error);
+      } catch {
+        // ignore malformed auth data
       }
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError<{ error?: string }>) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth-storage');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+
+    if (error.response?.status === 404) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status && error.response.status >= 500) {
+      emitToast('Server error. Please try again later.', 'error');
+    } else if (error.code === 'ECONNABORTED') {
+      emitToast('Request timed out. Check your connection.', 'error');
+    } else if (!error.response) {
+      emitToast('Cannot connect to server. Is the backend running?', 'error');
+    }
+
     return Promise.reject(error);
   }
 );

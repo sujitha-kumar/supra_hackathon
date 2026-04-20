@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout';
 import { Card } from '../components/ui';
 import { AISuggestionBanner, TaskForm, AIContextPanel } from '../components/create-task';
+import { taskService } from '../services/taskService';
+import { useToast } from '../components/ui/Toast';
+import type { TaskPriority } from '../types/task';
 
 interface TaskFormData {
   title: string;
@@ -15,7 +18,9 @@ interface TaskFormData {
 
 export const TaskCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showSuggestion, setShowSuggestion] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
@@ -35,7 +40,7 @@ export const TaskCreatePage: React.FC = () => {
   const handleApplySuggestion = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     setFormData({
       title: aiSuggestion.title,
       description: aiSuggestion.description,
@@ -51,9 +56,42 @@ export const TaskCreatePage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
-    console.log('Creating task:', formData);
-    navigate('/tasks');
+  const handleSubmit = async () => {
+    if (!formData.title.trim()) {
+      showToast('Task title is required.', 'warning');
+      return;
+    }
+    if (!formData.dueDate) {
+      showToast('Due date is required.', 'warning');
+      return;
+    }
+
+    const validPriorities: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
+    const priority: TaskPriority = validPriorities.includes(formData.priority as TaskPriority)
+      ? (formData.priority as TaskPriority)
+      : 'medium';
+
+    const tags = formData.tags
+      ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean)
+      : [];
+
+    setIsSubmitting(true);
+    try {
+      await taskService.create({
+        title: formData.title.trim(),
+        description: formData.description.trim() || formData.title.trim(),
+        priority,
+        due_date: formData.dueDate,
+        assignee: 'Unassigned',
+        tags,
+      });
+      showToast('Task created successfully.', 'success');
+      navigate('/tasks');
+    } catch {
+      showToast('Failed to create task. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -61,10 +99,7 @@ export const TaskCreatePage: React.FC = () => {
   };
 
   return (
-    <PageWrapper
-      title="Create Task"
-      subtitle="Add a new task with AI assistance"
-    >
+    <PageWrapper title="Create Task" subtitle="Add a new task with AI assistance">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           {showSuggestion && (
@@ -81,6 +116,7 @@ export const TaskCreatePage: React.FC = () => {
               onChange={handleFieldChange}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
+              isSubmitting={isSubmitting}
             />
           </Card>
         </div>
