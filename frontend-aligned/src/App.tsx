@@ -12,6 +12,7 @@ import {
   AnalyticsPage,
   SettingsPage,
 } from './pages';
+import CopilotChatPage from './pages/CopilotChatPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/clients" element={<ClientsListPage />} />
                 <Route path="/clients/:id" element={<ClientProfilePage />} />
                 <Route path="/chat" element={<LiveChatPage />} />
+                <Route path="/copilot-chat" element={<CopilotChatPage />} />
                 <Route path="/history" element={<ConversationHistoryPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/tasks/create" element={<TaskCreatePage />} />

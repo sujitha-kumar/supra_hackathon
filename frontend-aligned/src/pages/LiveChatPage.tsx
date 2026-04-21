@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChatMessageList, ChatInput, SuggestedActions, ClientContextPanel } from '../components/chat';
+import RuleEngineReport from '../components/RuleEngineReport';
+import QuickChips from '../components/QuickChips';
 import type { ClientContextData, PortfolioContextData } from '../components/chat/ClientContextPanel';
 import { useClientProfile, useClientPortfolio } from '../hooks/useClients';
 import type { ChatMessage, SuggestedAction } from '../types/chat';
 import { chatService, type SupportedLanguage } from '../services/chatService';
+import chatRouter from '../utils/chatRouter';
+import copilotApi from '../services/copilotApi';
 
 const DEMO_CLIENT_ID = 1;
 const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
@@ -28,13 +32,45 @@ function riskScoreToLevel(score: number): ClientContextData['risk'] {
   return 'very-high';
 }
 
+// Sample client data for rule engine analysis
+const SAMPLE_CLIENT_DATA = {
+  client_id: 'client_uuid_8a3f21',
+  risk_profile: 'Moderate',
+  portfolio: {
+    equity_pct: 72,
+    debt_pct: 16,
+    hybrid_pct: 8,
+    cash_pct: 4,
+    sip_active: true,
+  },
+  performance: {
+    return_1m: -2.4,
+    benchmark_1m: -0.8,
+    return_3m: 3.1,
+    return_1y: 11.2,
+  },
+  market: {
+    trend: 'bullish',
+    volatility_index: 24,
+  },
+  behavior: {
+    last_action: 'increase_equity',
+  },
+  transactions: {
+    recent_equity_increase: true,
+  },
+};
+
 export const LiveChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAITyping, setIsAITyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [language, setLanguage] = useState<SupportedLanguage>('english');
+  const [ruleEngineOutput, setRuleEngineOutput] = useState<any>(null);
+  const [showQuickChips, setShowQuickChips] = useState(true);
 
   const location = useLocation();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasAutoSentInitial = useRef(false);
 
   const { data: clientProfile } = useClientProfile(DEMO_CLIENT_ID);
@@ -101,6 +137,11 @@ export const LiveChatPage: React.FC = () => {
     { id: '4', label: 'Tax Strategy', prompt: 'What tax optimization strategies can we implement?' },
   ];
 
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   useEffect(() => {
     const state = (location.state ?? {}) as { initialQuery?: string; intent?: string };
     const initialQuery = state.initialQuery?.trim();
@@ -112,6 +153,10 @@ export const LiveChatPage: React.FC = () => {
   }, [location.state]);
 
   const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
+
+    setShowQuickChips(false);
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content,
@@ -132,6 +177,9 @@ export const LiveChatPage: React.FC = () => {
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
+      // Get route info from smart router
+      const routeInfo = chatRouter.getRouteInfo(content, true);
+
       let currentSessionId = sessionId;
       if (!currentSessionId) {
         const session = await chatService.createSession({ client_id: DEMO_CLIENT_ID });
@@ -139,6 +187,30 @@ export const LiveChatPage: React.FC = () => {
         setSessionId(session.id);
       }
 
+      // Handle different routes
+      if (routeInfo.route === 'PORTFOLIO') {
+        // Run rule engine analysis for portfolio questions
+        try {
+          const analysis = await copilotApi.analyzeWithRuleEngine(SAMPLE_CLIENT_DATA);
+          setRuleEngineOutput(analysis);
+
+          // Add rule engine report to chat
+          const reportMessage: ChatMessage = {
+            id: Date.now().toString() + '_report',
+            content: 'Portfolio Analysis Report',
+            sender: 'ai',
+            timestamp: new Date(),
+            type: 'rule_engine_report',
+            ruleEngineOutput: analysis,
+          };
+
+          setMessages((prev) => prev.filter((msg) => !msg.isTyping).concat(reportMessage));
+        } catch (error) {
+          console.error('Rule engine error:', error);
+        }
+      }
+
+      // Send message to chat service
       const result = await chatService.sendMessage({
         session_id: currentSessionId,
         message: content,
@@ -153,20 +225,27 @@ export const LiveChatPage: React.FC = () => {
         content: result.aiResponse.content,
         sender: 'ai',
         timestamp: new Date(result.aiResponse.timestamp),
+        type: 'text',
       };
       setMessages((prev) => [...prev, aiResponse]);
-    } catch {
+    } catch (error) {
+      console.error('Chat error:', error);
       setMessages((prev) => prev.filter((msg) => !msg.isTyping));
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         content: 'Failed to send message. Please try again.',
         sender: 'ai',
         timestamp: new Date(),
+        type: 'text',
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsAITyping(false);
     }
+  };
+
+  const handleQuickChipClick = (chip: string) => {
+    void handleSendMessage(chip);
   };
 
   return (
@@ -210,16 +289,87 @@ export const LiveChatPage: React.FC = () => {
           </div>
         </div>
 
-        <ChatMessageList messages={messages} />
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {messages.length === 0 && !showQuickChips && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center mx-auto text-2xl">
+                  💬
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Start a conversation</h2>
+                <p className="text-gray-600 text-sm max-w-md">
+                  Ask about portfolios, risk analysis, rebalancing, or any wealth management question.
+                </p>
+              </div>
+            </div>
+          )}
 
-        {messages.length === 0 && (
+          {messages.map((msg) => {
+            if (msg.type === 'rule_engine_report' && msg.ruleEngineOutput) {
+              return (
+                <div key={msg.id} className="my-4">
+                  <RuleEngineReport data={msg.ruleEngineOutput} />
+                </div>
+              );
+            }
+
+            if (msg.isTyping) {
+              return (
+                <div key={msg.id} className="flex justify-start">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                </div>
+              );
+            }
+
+            const isUser = msg.sender === 'user';
+            return (
+              <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-md px-4 py-3 rounded-lg ${
+                    isUser
+                      ? 'bg-brand text-white rounded-br-none'
+                      : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                </div>
+              </div>
+            );
+          })}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Chips */}
+        {showQuickChips && messages.length === 0 && (
+          <QuickChips onChipClick={handleQuickChipClick} isLoading={isAITyping} />
+        )}
+
+        {messages.length === 0 && !showQuickChips && (
           <SuggestedActions actions={suggestedActions} onSelect={handleSendMessage} />
         )}
 
-        <ChatInput onSend={handleSendMessage} disabled={isAITyping} placeholder={`Ask in any language. Reply will come in ${LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.`} />
+        {/* Input Area */}
+        <ChatInput
+          onSend={handleSendMessage}
+          disabled={isAITyping}
+          placeholder={`Ask about portfolio, risk analysis, rebalancing... Reply in ${LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.`}
+        />
       </div>
 
-      <ClientContextPanel client={clientContext} portfolio={portfolioContext} />
+      {/* Client Panel - Enhanced with Rule Engine Summary */}
+      <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-y-auto">
+        <ClientContextPanel
+          client={clientContext}
+          portfolio={portfolioContext}
+          ruleEngineOutput={ruleEngineOutput}
+        />
+      </div>
     </div>
   );
 };
