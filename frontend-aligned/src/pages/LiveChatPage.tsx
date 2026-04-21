@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ChatMessageList, ChatInput, SuggestedActions, ClientContextPanel } from '../components/chat';
+import { ChatInput, SuggestedActions, ClientContextPanel } from '../components/chat';
 import RuleEngineReport from '../components/RuleEngineReport';
 import QuickChips from '../components/QuickChips';
 import type { ClientContextData, PortfolioContextData } from '../components/chat/ClientContextPanel';

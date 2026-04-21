@@ -27,9 +27,10 @@ export interface PortfolioContextData {
 interface ClientContextPanelProps {
   client: ClientContextData;
   portfolio: PortfolioContextData;
+  ruleEngineOutput?: any;
 }
 
-export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, portfolio }) => {
+export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, portfolio, ruleEngineOutput }) => {
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
@@ -127,6 +128,32 @@ export const ClientContextPanel: React.FC<ClientContextPanelProps> = ({ client, 
           </div>
         </div>
       </Card>
+
+      {ruleEngineOutput && (
+        <Card padding="md" className="bg-blue-50 border-blue-200">
+          <h4 className="font-semibold text-gray-900 mb-3">Analysis Summary</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Risk Level</span>
+              <Badge variant="danger" size="sm">
+                {ruleEngineOutput.overall_risk_level?.toUpperCase()}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Rules Triggered</span>
+              <span className="font-semibold text-gray-900">{ruleEngineOutput.rules_triggered?.length}/8</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Confidence</span>
+              <span className="font-semibold text-gray-900">{Math.round((ruleEngineOutput.confidence || 0) * 100)}%</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-blue-200">
+              <span className="text-gray-600 font-medium">Primary Action</span>
+              <span className="text-brand font-semibold">{ruleEngineOutput.primary_action}</span>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

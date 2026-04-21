@@ -79,10 +79,10 @@ export const ClientsListPage: React.FC = () => {
 
   const columns = [
     {
-      key: 'name',
+      key: 'name' as const,
       header: 'Client',
       width: '20%',
-      render: (client) => (
+      render: (client: any) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-brand to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
             <span className="text-white font-semibold text-sm">
@@ -295,9 +295,9 @@ export const ClientsListPage: React.FC = () => {
 
         <Card padding="sm">
           <DataTable
-            columns={columns}
-            data={clients}
-            onRowClick={(client) => navigate(`/clients/${client.client_id}`)}
+            columns={columns as any}
+            data={clients as any}
+            onRowClick={(client: any) => navigate(`/clients/${client.client_id}`)}
             emptyMessage="No clients found matching your criteria"
           />
           

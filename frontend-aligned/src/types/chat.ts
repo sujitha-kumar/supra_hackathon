@@ -4,6 +4,8 @@ export interface ChatMessage {
   sender: 'user' | 'ai';
   timestamp: Date;
   isTyping?: boolean;
+  type?: 'text' | 'rule_engine_report';
+  ruleEngineOutput?: any;
 }
 
 export interface SuggestedAction {
