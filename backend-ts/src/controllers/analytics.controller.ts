@@ -9,7 +9,7 @@ export class AnalyticsController {
     this.service = new AnalyticsService();
   }
 
-  getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getDashboard = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dashboard = await this.service.getDashboard();
       res.json(dashboard);
@@ -28,7 +28,7 @@ export class AnalyticsController {
     }
   };
 
-  getFunnel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getFunnel = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const funnel = await this.service.getConversionFunnel();
       res.json(funnel);
@@ -37,7 +37,7 @@ export class AnalyticsController {
     }
   };
 
-  getInsights = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getInsights = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const insights = await this.service.getInsights();
       res.json(insights);

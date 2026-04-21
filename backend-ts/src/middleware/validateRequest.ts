@@ -4,7 +4,7 @@ import { AppError, ErrorCodes } from '../types';
 
 export function validateRequest(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void {
   const errors = validationResult(req);

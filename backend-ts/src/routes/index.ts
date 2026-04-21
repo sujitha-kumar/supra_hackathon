@@ -4,8 +4,10 @@ import taskRoutes from './task.routes';
 import chatRoutes from './chat.routes';
 import analyticsRoutes from './analytics.routes';
 import copilotRoutes from './copilot.routes';
-import ruleEngineRoutes from './ruleEngine.js';
-import clientSearchRoutes from './clientSearch.js';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ruleEngineRoutes = require('./ruleEngine.js');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const clientSearchRoutes = require('./clientSearch.js');
 
 const router = Router();
 

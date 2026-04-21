@@ -19,7 +19,7 @@ export class ChatController {
     }
   };
 
-  getSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSessions = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const sessions = await this.service.getAllSessions();
       res.json(sessions);
