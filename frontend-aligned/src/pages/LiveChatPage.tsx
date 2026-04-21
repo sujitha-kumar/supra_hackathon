@@ -290,7 +290,7 @@ export const LiveChatPage: React.FC = () => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
           {messages.length === 0 && !showQuickChips && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-4">
@@ -345,21 +345,24 @@ export const LiveChatPage: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Chips */}
-        {showQuickChips && messages.length === 0 && (
-          <QuickChips onChipClick={handleQuickChipClick} isLoading={isAITyping} />
-        )}
+        {/* Bottom Section - Quick Chips + Input */}
+        <div className="flex-shrink-0 border-t border-gray-200">
+          {/* Quick Chips */}
+          {showQuickChips && messages.length === 0 && (
+            <QuickChips onChipClick={handleQuickChipClick} isLoading={isAITyping} />
+          )}
 
-        {messages.length === 0 && !showQuickChips && (
-          <SuggestedActions actions={suggestedActions} onSelect={handleSendMessage} />
-        )}
+          {messages.length === 0 && !showQuickChips && (
+            <SuggestedActions actions={suggestedActions} onSelect={handleSendMessage} />
+          )}
 
-        {/* Input Area */}
-        <ChatInput
-          onSend={handleSendMessage}
-          disabled={isAITyping}
-          placeholder={`Ask about portfolio, risk analysis, rebalancing... Reply in ${LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.`}
-        />
+          {/* Input Area */}
+          <ChatInput
+            onSend={handleSendMessage}
+            disabled={isAITyping}
+            placeholder={`Ask about portfolio, risk analysis, rebalancing... Reply in ${LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.`}
+          />
+        </div>
       </div>
 
       {/* Client Panel - Enhanced with Rule Engine Summary */}
