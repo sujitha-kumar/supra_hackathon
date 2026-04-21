@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use localhost for development, fallback to environment variable for production
-const API_BASE_URL = process.env.REACT_APP_API_URL || (
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
   typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:3001'
     : 'https://hackathon-backend-xgn6.onrender.com'
