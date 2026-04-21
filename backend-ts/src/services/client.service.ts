@@ -10,7 +10,7 @@ export interface ClientsResponse {
 
 export interface PortfolioResponse {
   portfolio_id: number;
-  client_id: number;
+  client_id: string;
   total_value: number;
   allocations: {
     equity: number;
@@ -18,6 +18,7 @@ export interface PortfolioResponse {
     gold: number;
     cash: number;
   };
+  sip_active: boolean;
   last_updated: string;
 }
 
@@ -38,7 +39,7 @@ export interface BriefInsight {
 }
 
 export interface ClientBriefResponse {
-  client_id: number;
+  client_id: string;
   generated_at: string;
   summary: string;
   patterns: string[];
@@ -64,7 +65,7 @@ export class ClientService {
     };
   }
 
-  async getClientById(id: number): Promise<Client> {
+  async getClientById(id: string): Promise<Client> {
     const client = await this.repository.findById(id);
 
     if (!client) {
@@ -74,8 +75,8 @@ export class ClientService {
     return client;
   }
 
-  async getClientPortfolio(id: number): Promise<PortfolioResponse> {
-    await this.getClientById(id);
+  async getClientPortfolio(id: string): Promise<PortfolioResponse> {
+    const client = await this.getClientById(id);
 
     const portfolio = await this.repository.getPortfolio(id);
 
@@ -93,11 +94,12 @@ export class ClientService {
         gold: portfolio.alt_pct,
         cash: portfolio.cash_pct,
       },
+      sip_active: client.portfolio.sip_active ?? false,
       last_updated: portfolio.last_updated,
     };
   }
 
-  async getClientPerformance(id: number): Promise<PerformanceResponse> {
+  async getClientPerformance(id: string): Promise<PerformanceResponse> {
     await this.getClientById(id);
 
     const data = await this.repository.getPerformance(id);
@@ -105,7 +107,7 @@ export class ClientService {
     return { data };
   }
 
-  async getClientInteractions(id: number, limit: number = 10): Promise<InteractionsResponse> {
+  async getClientInteractions(id: string, limit: number = 10): Promise<InteractionsResponse> {
     await this.getClientById(id);
 
     const interactions = await this.repository.getInteractions(id, limit);
@@ -113,7 +115,7 @@ export class ClientService {
     return { interactions };
   }
 
-  async getClientBrief(id: number): Promise<ClientBriefResponse> {
+  async getClientBrief(id: string): Promise<ClientBriefResponse> {
     const client = await this.getClientById(id);
 
     const [portfolio, performance, interactions] = await Promise.all([
@@ -217,7 +219,7 @@ export class ClientService {
     }
 
     return {
-      client_id: id,
+      client_id: String(id),
       generated_at: generatedAt,
       summary: summaryParts.join(' '),
       patterns,

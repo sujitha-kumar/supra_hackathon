@@ -139,8 +139,60 @@ export class ChatService {
       return this.translateIfRequired(responseText, messageData.language);
     } catch (error) {
       console.error('AI generation failed, using fallback:', error);
+
+      if (messageData.client_id) {
+        const client = await this.clientRepository.findById(messageData.client_id);
+        if (client) {
+          const portfolio = await this.clientRepository.getPortfolio(messageData.client_id);
+          const contextualFallback = this.buildContextualFallbackResponse(
+            client,
+            portfolio,
+            messageData.message
+          );
+          return this.translateIfRequired(contextualFallback, messageData.language);
+        }
+      }
+
       return this.getGenericResponse(messageData.message, messageData.language);
     }
+  }
+
+  private buildContextualFallbackResponse(
+    client: Awaited<ReturnType<ClientRepository['findById']>>,
+    portfolio: Awaited<ReturnType<ClientRepository['getPortfolio']>>,
+    query: string
+  ): string {
+    const safeClient = client as NonNullable<typeof client>;
+    const equity = Number(portfolio?.equity_pct ?? 0);
+    const debt = Number(portfolio?.debt_pct ?? 0);
+    const cash = Number(portfolio?.cash_pct ?? 0);
+    const riskScore = Number(safeClient.risk_score ?? 0);
+    const riskProfile = safeClient.risk_profile || 'Moderate';
+
+    const normalized = query.toLowerCase();
+
+    if (normalized.includes('risk')) {
+      return (
+        `${safeClient.name} is tagged as ${riskProfile} risk with score ${riskScore || 'N/A'}/10. ` +
+        `Current allocation is Equity ${equity}%, Debt ${debt}%, Cash ${cash}%. ` +
+        `${equity > 70 ? 'Equity concentration is high for this profile and needs review.' : 'Risk appears broadly aligned, but periodic review is advised.'}\n\n` +
+        `**Suggested Action:** Schedule a risk-alignment review and discuss target allocation bands with the client.`
+      );
+    }
+
+    if (normalized.includes('action') || normalized.includes('next') || normalized.includes('call')) {
+      return (
+        `For ${safeClient.name}, use a 3-step call flow: portfolio snapshot, risk alignment, and next quarter plan. ` +
+        `Lead with allocation (Equity ${equity}%, Debt ${debt}%, Cash ${cash}%) and link to client goals.\n\n` +
+        `**Suggested Action:** Propose one concrete move (rebalance or hold) and set a follow-up date before ending the call.`
+      );
+    }
+
+    return (
+      `${safeClient.name}'s current profile is ${riskProfile} with allocation Equity ${equity}%, Debt ${debt}%, Cash ${cash}. ` +
+      `I can help with risk explanation, rebalancing narrative, and call talking points based on this context.\n\n` +
+      `**Suggested Action:** Ask a focused question such as "What should I say about rebalancing?" for a tailored response.`
+    );
   }
 
   private async getGenericResponse(

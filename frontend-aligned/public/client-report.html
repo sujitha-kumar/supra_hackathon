@@ -1,0 +1,428 @@
+
+<h2 class="sr-only">RM Talking Framework — Rule Engine Output Dashboard showing risk flags, panel insights, actions, and talking points for a client portfolio</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1rem 0}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.top-bar h1{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.top-bar span{font-size:12px;color:var(--color-text-secondary)}
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.metric-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.metric-value{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.metric-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-critical{background:#FECACA;color:#7F1D1D}
+.badge-high{background:#FED7AA;color:#7C2D12}
+.badge-medium{background:#FEF08A;color:#713F12}
+.badge-low{background:#BBF7D0;color:#14532D}
+.panel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.tab{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);background:var(--color-background-primary);transition:all .15s}
+.tab.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.tab .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px}
+.dot-critical{background:#EF4444}
+.dot-high{background:#F97316}
+.dot-medium{background:#EAB308}
+.dot-low{background:#22C55E}
+.panels-area{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1.25rem}
+.panel-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.panel-card.active-panel{border-color:var(--color-border-info);border-width:1px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.panel-title{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.panel-tag{font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.panel-body{padding:12px 14px}
+.insight-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.insight-row:last-child{border-bottom:none;padding-bottom:0}
+.insight-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.icon-critical{background:#FEE2E2}
+.icon-high{background:#FEF3C7}
+.icon-medium{background:#EFF6FF}
+.icon-low{background:#F0FDF4}
+.insight-content{flex:1;min-width:0}
+.insight-flag{font-size:10px;font-weight:500;color:var(--color-text-secondary);margin-bottom:2px;font-family:var(--font-mono)}
+.insight-msg{font-size:12px;color:var(--color-text-primary);line-height:1.4;margin-bottom:3px}
+.insight-impact{font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.score-bar-wrap{display:flex;align-items:center;gap:6px;margin-top:4px}
+.score-bar{flex:1;height:3px;background:var(--color-border-tertiary);border-radius:2px;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;transition:width .4s}
+.score-label{font-size:10px;color:var(--color-text-secondary);min-width:20px;text-align:right}
+.actions-section{margin-bottom:1.25rem}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px}
+.actions-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.action-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px}
+.action-id{font-size:10px;font-weight:500;font-family:var(--font-mono);color:var(--color-text-secondary);margin-bottom:4px}
+.action-desc{font-size:11px;color:var(--color-text-primary);line-height:1.4;margin-bottom:6px}
+.action-chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.tp-section{margin-bottom:1rem}
+.tp-priority-label{font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.tp-list{display:flex;flex-direction:column;gap:6px}
+.tp-row{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)}
+.tp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tp-text{font-size:12px;color:var(--color-text-primary);line-height:1.5;flex:1}
+.tp-meta{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.persona-tag{font-size:10px;padding:2px 6px;border-radius:4px;background:#E0E7FF;color:#3730A3}
+.rule-tag{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--color-background-secondary);color:var(--color-text-secondary);font-family:var(--font-mono)}
+.meta-bar{display:flex;gap:12px;padding:10px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:11px;color:var(--color-text-secondary);flex-wrap:wrap}
+.meta-item strong{color:var(--color-text-primary);font-weight:500}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.25rem 0}
+.empty-panel{font-size:12px;color:var(--color-text-secondary);padding:8px 0;font-style:italic}
+.linked-action{font-size:10px;padding:2px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;font-weight:500}
+</style>
+
+<div class="wrap">
+
+<div class="top-bar">
+  <h1>RM talking framework — rule engine output</h1>
+  <span>21 Apr 2026, 07:30 IST &nbsp;·&nbsp; client_uuid_8a3f21</span>
+</div>
+
+<div class="summary-grid">
+  <div class="metric">
+    <div class="metric-label">Risk level</div>
+    <div class="metric-value"><span class="badge badge-critical">Critical</span></div>
+    <div class="metric-sub">Overall portfolio</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Rules triggered</div>
+    <div class="metric-value">8 / 8</div>
+    <div class="metric-sub">All rules fired</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Primary action</div>
+    <div class="metric-value" style="font-size:14px;padding-top:3px">REBALANCE</div>
+    <div class="metric-sub">4 rules driving this</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Confidence</div>
+    <div class="metric-value">92%</div>
+    <div class="metric-sub">Engine confidence</div>
+  </div>
+</div>
+
+<div class="section-title" style="margin-bottom:8px">Panels</div>
+<div class="panel-tabs">
+  <div class="tab active" onclick="filterPanel('all')">All panels</div>
+  <div class="tab" onclick="filterPanel('P0')"><span class="dot dot-critical"></span>P0 Risk</div>
+  <div class="tab" onclick="filterPanel('P1')"><span class="dot dot-critical"></span>P1 Market</div>
+  <div class="tab" onclick="filterPanel('P2')"><span class="dot dot-high"></span>P2 Cash flow</div>
+  <div class="tab" onclick="filterPanel('P4')"><span class="dot dot-high"></span>P4 Behavior</div>
+  <div class="tab" onclick="filterPanel('P5')"><span class="dot dot-critical"></span>P5 Actions</div>
+  <div class="tab" onclick="filterPanel('P6')"><span class="dot dot-low"></span>P6 Support</div>
+</div>
+
+<div class="panels-area" id="panels-area">
+
+  <div class="panel-card" data-panel="P0">
+    <div class="panel-header">
+      <span class="panel-title">P0 &nbsp;·&nbsp; User risk &amp; portfolio overview</span>
+      <span class="panel-tag badge-critical" style="background:#FEE2E2;color:#7F1D1D">2 flags</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-critical">⚠</div>
+        <div class="insight-content">
+          <div class="insight-flag">OVEREXPOSED_EQUITY</div>
+          <div class="insight-msg">Equity allocation exceeds recommended range</div>
+          <div class="insight-impact">Higher downside risk during volatility</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:95%;background:#EF4444"></div></div>
+            <span class="score-label">95</span>
+            <span class="linked-action">REBALANCE</span>
+          </div>
+        </div>
+      </div>
+      <div class="insight-row">
+        <div class="insight-icon icon-medium">🛡</div>
+        <div class="insight-content">
+          <div class="insight-flag">LOW_DEFENSIVE_ALLOCATION</div>
+          <div class="insight-msg">Debt allocation is below the defensive floor</div>
+          <div class="insight-impact">Reduced downside protection</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:72%;background:#EAB308"></div></div>
+            <span class="score-label">72</span>
+            <span class="linked-action" style="background:#DCFCE7;color:#14532D">INCREASE_DEBT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card" data-panel="P1">
+    <div class="panel-header">
+      <span class="panel-title">P1 &nbsp;·&nbsp; Market intelligence</span>
+      <span class="panel-tag" style="background:#FEE2E2;color:#7F1D1D">2 flags</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-critical">📈</div>
+        <div class="insight-content">
+          <div class="insight-flag">HIGH_VOLATILITY_IMPACT</div>
+          <div class="insight-msg">High equity amplifying market volatility impact</div>
+          <div class="insight-impact">Higher drawdown vs benchmark</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:#EF4444"></div></div>
+            <span class="score-label">90</span>
+            <span class="linked-action">REBALANCE</span>
+          </div>
+        </div>
+      </div>
+      <div class="insight-row">
+        <div class="insight-icon icon-high">📉</div>
+        <div class="insight-content">
+          <div class="insight-flag">UNDERPERFORMANCE</div>
+          <div class="insight-msg">Portfolio underperformed benchmark this month</div>
+          <div class="insight-impact">Client dissatisfaction risk</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:88%;background:#F97316"></div></div>
+            <span class="score-label">88</span>
+            <span class="linked-action" style="background:#EDE9FE;color:#4C1D95">REVIEW_ALLOC</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card" data-panel="P2">
+    <div class="panel-header">
+      <span class="panel-title">P2 &nbsp;·&nbsp; Cash flow &amp; transactions</span>
+      <span class="panel-tag" style="background:#FEF3C7;color:#92400E">1 flag</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-high">💸</div>
+        <div class="insight-content">
+          <div class="insight-flag">RECENT_EQUITY_INCREASE</div>
+          <div class="insight-msg">Recent transaction raised equity at peak valuations</div>
+          <div class="insight-impact">Portfolio risk increased at high valuations</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:80%;background:#F97316"></div></div>
+            <span class="score-label">80</span>
+            <span class="linked-action" style="background:#EDE9FE;color:#4C1D95">REVIEW_TXN</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card" data-panel="P4">
+    <div class="panel-header">
+      <span class="panel-title">P4 &nbsp;·&nbsp; User behavior</span>
+      <span class="panel-tag" style="background:#FEF3C7;color:#92400E">1 flag</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-high">🔁</div>
+        <div class="insight-content">
+          <div class="insight-flag">PERFORMANCE_CHASING</div>
+          <div class="insight-msg">Equity increased during bullish market phase</div>
+          <div class="insight-impact">Higher correction risk at peak exposure</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:85%;background:#F97316"></div></div>
+            <span class="score-label">85</span>
+            <span class="linked-action">REBALANCE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card" data-panel="P5">
+    <div class="panel-header">
+      <span class="panel-title">P5 &nbsp;·&nbsp; Product recommendations</span>
+      <span class="panel-tag" style="background:#FEE2E2;color:#7F1D1D">1 action</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-critical">🎯</div>
+        <div class="insight-content">
+          <div class="insight-flag">REBALANCE_RECOMMENDED</div>
+          <div class="insight-msg">Portfolio rebalancing strongly recommended</div>
+          <div class="insight-impact">Reduce equity 10–15% → debt / hybrid funds</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:#EF4444"></div></div>
+            <span class="score-label">90</span>
+          </div>
+          <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+            <span class="chip" style="background:#DCFCE7;color:#14532D">debt_fund</span>
+            <span class="chip" style="background:#EDE9FE;color:#4C1D95">hybrid_fund</span>
+            <span class="chip" style="background:#FEF9C3;color:#713F12">liquid_fund</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card" data-panel="P6">
+    <div class="panel-header">
+      <span class="panel-title">P6 &nbsp;·&nbsp; Support &amp; assistance</span>
+      <span class="panel-tag" style="background:#F0FDF4;color:#14532D">1 info</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-row">
+        <div class="insight-icon icon-low">📅</div>
+        <div class="insight-content">
+          <div class="insight-flag">SIP_TEMPORARY_UNDERPERFORMANCE</div>
+          <div class="insight-msg">SIP impacted by short-term market volatility</div>
+          <div class="insight-impact">Normal market cycle — no action required</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:35%;background:#22C55E"></div></div>
+            <span class="score-label">35</span>
+            <span class="linked-action" style="background:#F0FDF4;color:#14532D">EDUCATION</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="actions-section">
+  <div class="section-title">Recommended actions</div>
+  <div class="actions-list">
+    <div class="action-card" style="border-color:#FCA5A5">
+      <div class="action-id">REBALANCE</div>
+      <div class="action-desc">Reduce equity by 10–15%, reallocate to debt or hybrid funds</div>
+      <div class="action-chips">
+        <span class="chip" style="background:#FEE2E2;color:#7F1D1D">Critical</span>
+        <span class="chip">4 rules</span>
+      </div>
+    </div>
+    <div class="action-card">
+      <div class="action-id">REVIEW_ALLOCATION</div>
+      <div class="action-desc">Review allocation against benchmark and risk profile targets</div>
+      <div class="action-chips">
+        <span class="chip" style="background:#FEF3C7;color:#92400E">High</span>
+        <span class="chip">1 rule</span>
+      </div>
+    </div>
+    <div class="action-card">
+      <div class="action-id">INCREASE_DEBT</div>
+      <div class="action-desc">Raise debt allocation to minimum 20% floor</div>
+      <div class="action-chips">
+        <span class="chip" style="background:#FEF9C3;color:#713F12">Medium</span>
+        <span class="chip">1 rule</span>
+      </div>
+    </div>
+    <div class="action-card">
+      <div class="action-id">REVIEW_TRANSACTION</div>
+      <div class="action-desc">Assess whether partial reversal of recent equity buy is appropriate</div>
+      <div class="action-chips">
+        <span class="chip" style="background:#FEF9C3;color:#713F12">Medium</span>
+        <span class="chip">1 rule</span>
+      </div>
+    </div>
+    <div class="action-card">
+      <div class="action-id">EDUCATION</div>
+      <div class="action-desc">Share SIP cost-averaging explainer to build client conviction</div>
+      <div class="action-chips">
+        <span class="chip" style="background:#F0FDF4;color:#14532D">Low</span>
+        <span class="chip">1 rule</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section-title" style="margin-bottom:10px">Talking points for RM</div>
+
+<div class="tp-section">
+  <div class="tp-priority-label"><span class="dot dot-critical"></span> Critical priority</div>
+  <div class="tp-list">
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#EF4444"></div>
+      <div>
+        <div class="tp-text">Your equity exposure is currently higher than recommended for your risk profile.</div>
+        <div class="tp-meta"><span class="persona-tag">balanced</span><span class="rule-tag">RISK_OVEREXPOSURE</span></div>
+      </div>
+    </div>
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#EF4444"></div>
+      <div>
+        <div class="tp-text">Current market volatility is having a magnified effect on your portfolio due to high equity exposure.</div>
+        <div class="tp-meta"><span class="persona-tag">risk_explainer</span><span class="rule-tag">HIGH_VOLATILITY_IMPACT</span></div>
+      </div>
+    </div>
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#EF4444"></div>
+      <div>
+        <div class="tp-text">We recommend rebalancing your portfolio to bring it in line with your risk profile.</div>
+        <div class="tp-meta"><span class="persona-tag">balanced</span><span class="rule-tag">REBALANCE_REQUIRED</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tp-section" style="margin-top:12px">
+  <div class="tp-priority-label"><span class="dot dot-high"></span> High priority</div>
+  <div class="tp-list">
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#F97316"></div>
+      <div>
+        <div class="tp-text">Your portfolio has slightly underperformed the benchmark this month, driven by higher equity allocation during a correction.</div>
+        <div class="tp-meta"><span class="persona-tag">balanced</span><span class="rule-tag">PERFORMANCE_UNDERPERFORMANCE</span></div>
+      </div>
+    </div>
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#F97316"></div>
+      <div>
+        <div class="tp-text">You recently increased equity exposure during a strong market phase — a common but risky pattern.</div>
+        <div class="tp-meta"><span class="persona-tag">balanced</span><span class="rule-tag">BEHAVIOR_PERFORMANCE_CHASING</span></div>
+      </div>
+    </div>
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#F97316"></div>
+      <div>
+        <div class="tp-text">Shifting 10–15% from equity into debt or hybrid funds can reduce volatility meaningfully.</div>
+        <div class="tp-meta"><span class="persona-tag">balanced</span><span class="rule-tag">REBALANCE_REQUIRED</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tp-section" style="margin-top:12px">
+  <div class="tp-priority-label"><span class="dot dot-low"></span> Low priority</div>
+  <div class="tp-list">
+    <div class="tp-row">
+      <div class="tp-dot" style="background:#22C55E"></div>
+      <div>
+        <div class="tp-text">Your SIP is showing a short-term dip — this is entirely normal during a correction. Lower prices mean you are accumulating more units at a reduced cost.</div>
+        <div class="tp-meta"><span class="persona-tag" style="background:#DCFCE7;color:#14532D">sip_educator</span><span class="rule-tag">SIP_SHORT_TERM_LOSS</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="meta-bar">
+  <span><strong>Engine</strong> v3.0</span>
+  <span><strong>Rules evaluated</strong> 8 / 8</span>
+  <span><strong>Rules skipped</strong> 0</span>
+  <span><strong>Dedup applied</strong> none</span>
+  <span><strong>Execution</strong> 38ms</span>
+  <span><strong>Confidence</strong> 92%</span>
+</div>
+
+</div>
+
+<script>
+function filterPanel(p){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.panel-card').forEach(card=>{
+    if(p==='all'||card.dataset.panel===p){
+      card.style.display='block';
+    } else {
+      card.style.display='none';
+    }
+  });
+  const area=document.getElementById('panels-area');
+  area.style.gridTemplateColumns=p==='all'?'repeat(2,minmax(0,1fr))':'1fr';
+}
+</script>

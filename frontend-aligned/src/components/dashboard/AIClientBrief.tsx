@@ -1,10 +1,12 @@
 import React from 'react';
 import { Card } from '../ui';
-import { useClientBrief } from '../../hooks/useClients';
+import { useClients, useClientBrief } from '../../hooks/useClients';
 
 export const AIClientBrief: React.FC = () => {
-  const clientId = 1;
-  const { data, isLoading, error } = useClientBrief(clientId);
+  // Use the first client from the live list so we always have a valid UUID
+  const { data: clientsData } = useClients({ limit: 1 });
+  const firstClientId = clientsData?.clients?.[0]?.id ?? null;
+  const { data, isLoading, error } = useClientBrief(firstClientId);
 
   return (
     <Card padding="md" className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">

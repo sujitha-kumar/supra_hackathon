@@ -21,7 +21,7 @@ export interface ChatSession {
 }
 
 export interface CreateSessionRequest {
-  client_id?: number;
+  client_id?: string;
   title?: string;
 }
 
@@ -41,7 +41,7 @@ export interface SessionMessagesResponse {
 export interface SendMessageRequest {
   session_id: string;
   message: string;
-  client_id?: number;
+  client_id?: string;
   language?: SupportedLanguage;
 }
 

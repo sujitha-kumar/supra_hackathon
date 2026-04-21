@@ -9,14 +9,14 @@ export const clientValidators = {
     query('offset').optional().isInt({ min: 0 }),
   ],
   getClientById: [
-    param('id').isInt({ min: 1 }),
+    param('id').isString().notEmpty(),
   ],
   getPerformance: [
-    param('id').isInt({ min: 1 }),
+    param('id').isString().notEmpty(),
     query('period').optional().isIn(['6M', '1Y', 'ALL']),
   ],
   getTransactions: [
-    param('id').isInt({ min: 1 }),
+    param('id').isString().notEmpty(),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 }),
   ],
@@ -26,12 +26,12 @@ export const taskValidators = {
   getTasks: [
     query('status').optional().isIn(['pending', 'in-progress', 'completed']),
     query('priority').optional().isIn(['low', 'medium', 'high', 'urgent']),
-    query('client_id').optional().isInt({ min: 1 }),
+    query('client_id').optional().isString().notEmpty(),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 }),
   ],
   createTask: [
-    body('client_id').optional().isInt({ min: 1 }),
+    body('client_id').optional().isString().notEmpty(),
     body('title').isString().notEmpty().trim(),
     body('description').isString().notEmpty().trim(),
     body('priority').isIn(['low', 'medium', 'high', 'urgent']),
@@ -49,7 +49,7 @@ export const taskValidators = {
 
 export const chatValidators = {
   createSession: [
-    body('client_id').optional().isInt({ min: 1 }),
+    body('client_id').optional().isString().notEmpty(),
     body('title').optional().isString().trim(),
   ],
   getMessages: [
@@ -58,7 +58,7 @@ export const chatValidators = {
   sendMessage: [
     body('session_id').isString().notEmpty(),
     body('message').isString().notEmpty().trim(),
-    body('client_id').optional().isInt({ min: 1 }),
+    body('client_id').optional().isString().notEmpty(),
     body('language').optional().isIn(['english', 'hindi', 'tamil', 'telugu', 'kannada']),
   ],
   translateMessage: [

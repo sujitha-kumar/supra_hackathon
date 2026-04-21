@@ -4,17 +4,69 @@
 // CLIENT TYPES
 // ============================================
 
+export interface ClientPortfolioJson {
+  equity_pct: number;
+  debt_pct: number;
+  hybrid_pct: number;
+  cash_pct: number;
+  sip_active: boolean;
+  total_value: number;
+}
+
+export interface ClientPerformanceJson {
+  return_1m: number;
+  return_3m: number;
+  return_1y: number;
+  return_3y: number;
+  benchmark_1m: number;
+  benchmark_3m: number;
+  benchmark_1y: number;
+  benchmark_3y: number;
+}
+
+export interface ClientMarketJson {
+  trend: string;
+  volatility_index: number;
+  sentiment: string;
+}
+
+export interface ClientBehaviorJson {
+  last_action: string | null;
+  action_frequency: string;
+  investment_style: string;
+}
+
+export interface ClientTransactionsJson {
+  recent_equity_increase: boolean;
+  recent_debt_increase: boolean;
+  recent_withdrawal: boolean;
+  redemption_pattern: string;
+}
+
 export interface Client {
-  client_id: number;
+  /** UUID primary key */
+  id: string;
+  /** Alias for id (backward compat) */
+  client_id: string;
   name: string;
   pan: string;
   email?: string;
   phone?: string;
+  risk_profile: 'Low' | 'Moderate' | 'High' | 'Aggressive';
+  /** Derived from portfolio.total_value */
   segment: 'HNI' | 'UHNI' | 'Retail';
-  risk_profile: 'Moderate' | 'Aggressive' | 'Conservative';
-  risk_score: number; // 0-10
+  /** Derived from risk_profile */
+  risk_score: number;
+  /** Derived from portfolio.total_value */
   total_aum: number;
   last_contacted_at?: string;
+  // JSONB columns
+  portfolio: ClientPortfolioJson;
+  performance: ClientPerformanceJson;
+  market: ClientMarketJson;
+  behavior: ClientBehaviorJson;
+  transactions: ClientTransactionsJson;
+  evaluated_at: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,21 +76,14 @@ export interface CreateClientRequest {
   pan: string;
   email?: string;
   phone?: string;
-  segment: 'HNI' | 'UHNI' | 'Retail';
-  risk_profile: 'Moderate' | 'Aggressive' | 'Conservative';
-  risk_score: number;
-  total_aum?: number;
+  risk_profile: 'Low' | 'Moderate' | 'High' | 'Aggressive';
 }
 
 export interface UpdateClientRequest {
   name?: string;
   email?: string;
   phone?: string;
-  segment?: 'HNI' | 'UHNI' | 'Retail';
-  risk_profile?: 'Moderate' | 'Aggressive' | 'Conservative';
-  risk_score?: number;
-  total_aum?: number;
-  last_contacted_at?: string;
+  risk_profile?: 'Low' | 'Moderate' | 'High' | 'Aggressive';
 }
 
 // ============================================
@@ -47,18 +92,19 @@ export interface UpdateClientRequest {
 
 export interface Portfolio {
   portfolio_id: number;
-  client_id: number;
+  client_id: string;
   total_value: number;
   equity_pct: number;
   debt_pct: number;
   alt_pct: number;
   cash_pct: number;
+  sip_active?: boolean;
   last_updated: string;
 }
 
 export interface Holding {
   holding_id: number;
-  client_id: number;
+  client_id: string;
   asset_name: string;
   asset_type: string;
   value: number;
@@ -68,7 +114,7 @@ export interface Holding {
 
 export interface PortfolioPerformance {
   id: number;
-  client_id: number;
+  client_id: string;
   date: string;
   portfolio_value: number;
 }
@@ -79,7 +125,7 @@ export interface PortfolioPerformance {
 
 export interface Transaction {
   transaction_id: number;
-  client_id: number;
+  client_id: string;
   type: 'BUY' | 'SELL' | 'SIP';
   asset_name: string;
   amount: number;
@@ -87,7 +133,7 @@ export interface Transaction {
 }
 
 export interface CreateTransactionRequest {
-  client_id: number;
+  client_id: string;
   type: 'BUY' | 'SELL' | 'SIP';
   asset_name: string;
   amount: number;
@@ -99,14 +145,14 @@ export interface CreateTransactionRequest {
 
 export interface Interaction {
   interaction_id: number;
-  client_id: number;
+  client_id: string;
   type: 'Call' | 'Email' | 'Meeting';
   notes: string;
   created_at: string;
 }
 
 export interface CreateInteractionRequest {
-  client_id: number;
+  client_id: string;
   type: 'Call' | 'Email' | 'Meeting';
   notes: string;
 }
@@ -117,7 +163,7 @@ export interface CreateInteractionRequest {
 
 export interface Task {
   task_id: number;
-  client_id: number;
+  client_id: string;
   title: string;
   description?: string;
   priority: 'High' | 'Medium' | 'Low';
@@ -127,7 +173,7 @@ export interface Task {
 }
 
 export interface CreateTaskRequest {
-  client_id: number;
+  client_id: string;
   title: string;
   description?: string;
   priority: 'High' | 'Medium' | 'Low';
@@ -148,7 +194,7 @@ export interface UpdateTaskRequest {
 
 export interface ChatSession {
   session_id: number;
-  client_id: number;
+  client_id: string;
   created_at: string;
   message_count?: number;
 }
@@ -164,11 +210,11 @@ export interface ChatMessage {
 export interface SendMessageRequest {
   session_id: number;
   message: string;
-  client_id?: number;
+  client_id?: string;
 }
 
 export interface CreateSessionRequest {
-  client_id: number;
+  client_id: string;
 }
 
 // ============================================
@@ -177,7 +223,7 @@ export interface CreateSessionRequest {
 
 export interface AIBrief {
   id: number;
-  client_id: number;
+  client_id: string;
   summary: string;
   generated_at: string;
 }
@@ -258,14 +304,14 @@ export interface AuthResponse {
 
 export interface ClientsQueryParams {
   segment?: 'HNI' | 'UHNI' | 'Retail';
-  risk_profile?: 'Moderate' | 'Aggressive' | 'Conservative';
+  risk_profile?: 'Low' | 'Moderate' | 'High' | 'Aggressive';
   search?: string;
   limit?: number;
   offset?: number;
 }
 
 export interface TasksQueryParams {
-  client_id?: number;
+  client_id?: string;
   status?: 'Pending' | 'Completed';
   priority?: 'High' | 'Medium' | 'Low';
   limit?: number;
@@ -283,7 +329,7 @@ export interface PerformanceQueryParams {
 }
 
 export interface ChatSessionsQueryParams {
-  client_id?: number;
+  client_id?: string;
   limit?: number;
   offset?: number;
 }

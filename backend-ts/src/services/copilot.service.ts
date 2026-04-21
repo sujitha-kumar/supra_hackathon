@@ -20,6 +20,15 @@ export class CopilotService {
   }
 
   buildClientContextString(client: Client, portfolio: Portfolio | null, interactions: Interaction[]): string {
+    const safeRiskScore =
+      typeof client.risk_score === 'number' && Number.isFinite(client.risk_score)
+        ? client.risk_score
+        : null;
+    const safeAum =
+      typeof client.total_aum === 'number' && Number.isFinite(client.total_aum)
+        ? client.total_aum
+        : null;
+
     const allocationSummary = portfolio
       ? `Equity: ${portfolio.equity_pct}%, Debt: ${portfolio.debt_pct}%, Gold/Alt: ${portfolio.alt_pct}%, Cash: ${portfolio.cash_pct}%`
       : 'Portfolio data unavailable';
@@ -32,15 +41,15 @@ export class CopilotService {
     return `
 CLIENT PROFILE:
 - Name: ${client.name}
-- Segment: ${client.segment}
-- Risk Profile: ${client.risk_profile}
-- Risk Score: ${client.risk_score}/10
-- Total AUM: ₹${client.total_aum.toLocaleString('en-IN')}
+- Segment: ${client.segment || 'N/A'}
+- Risk Profile: ${client.risk_profile || 'N/A'}
+- Risk Score: ${safeRiskScore !== null ? `${safeRiskScore}/10` : 'N/A'}
+- Total AUM: ${safeAum !== null ? `₹${safeAum.toLocaleString('en-IN')}` : 'N/A'}
 - Last Contacted: ${client.last_contacted_at ? new Date(client.last_contacted_at).toLocaleDateString('en-IN') : 'Never'}
 
 PORTFOLIO ALLOCATION:
 ${allocationSummary}
-${portfolio ? `Total Portfolio Value: ₹${portfolio.total_value.toLocaleString('en-IN')}` : ''}
+${portfolio ? `Total Portfolio Value: ₹${Number(portfolio.total_value || 0).toLocaleString('en-IN')}` : ''}
 
 RECENT INTERACTIONS:
 ${recentInteractions || 'No recent interactions recorded'}
@@ -211,7 +220,7 @@ SUGGESTED ACTION: [one specific actionable recommendation]`;
     ].join('\n');
   }
 
-  async generateTaskSuggestions(clientId: number): Promise<TaskSuggestionResponse> {
+  async generateTaskSuggestions(clientId: string): Promise<TaskSuggestionResponse> {
     const client = await this.clientRepository.findById(clientId);
     if (!client) {
       throw new AppError(404, ErrorCodes.CLIENT_NOT_FOUND, 'Client not found');
@@ -256,7 +265,7 @@ Return ONLY valid JSON, no markdown, no extra text:
           description: `Client has a risk score of ${client.risk_score}/10. Verify portfolio alignment with ${client.risk_profile} risk tolerance.`,
           type: 'risk_alert',
           priority: 'high',
-          clientId: client.client_id,
+          clientId: client.id,
           clientName: client.name,
           actionRequired: true,
         });
@@ -273,7 +282,7 @@ Return ONLY valid JSON, no markdown, no extra text:
           description: `No contact in ${daysSinceContact} days. Schedule a portfolio review call.`,
           type: 'follow_up',
           priority: daysSinceContact > 60 ? 'high' : 'medium',
-          clientId: client.client_id,
+          clientId: client.id,
           clientName: client.name,
           actionRequired: true,
         });
@@ -286,7 +295,7 @@ Return ONLY valid JSON, no markdown, no extra text:
           description: `UHNI client with ₹${(client.total_aum / 10_000_000).toFixed(1)}Cr AUM. Consider premium product offerings.`,
           type: 'opportunity',
           priority: 'medium',
-          clientId: client.client_id,
+          clientId: client.id,
           clientName: client.name,
           actionRequired: false,
         });

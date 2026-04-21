@@ -11,9 +11,9 @@ export const ClientProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'holdings' | 'transactions' | 'notes'>('overview');
 
-  const { data: client, isLoading, error } = useClientProfile(Number(id));
-  const { data: portfolio, isLoading: portfolioLoading } = useClientPortfolio(Number(id));
-  const { data: performance, isLoading: performanceLoading } = useClientPerformance(Number(id));
+  const { data: client, isLoading, error } = useClientProfile(id);
+  const { data: portfolio, isLoading: portfolioLoading } = useClientPortfolio(id);
+  const { data: performance, isLoading: performanceLoading } = useClientPerformance(id);
 
   const getInitials = (name: string) => {
     return name
@@ -24,13 +24,11 @@ export const ClientProfilePage: React.FC = () => {
   };
 
   const getRiskBadge = (riskProfile: Client['risk_profile']) => {
-    const variants = {
-      'Conservative': { variant: 'success' as const, label: 'Conservative' },
-      'Moderate': { variant: 'warning' as const, label: 'Moderate' },
-      'Aggressive': { variant: 'danger' as const, label: 'Aggressive' },
-    };
-    const config = variants[riskProfile];
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const normalizedRisk = String(riskProfile || '').toLowerCase();
+    if (normalizedRisk === 'low')        return <Badge variant="success">{riskProfile}</Badge>;
+    if (normalizedRisk === 'high')       return <Badge variant="warning">{riskProfile}</Badge>;
+    if (normalizedRisk === 'aggressive') return <Badge variant="danger">{riskProfile}</Badge>;
+    return <Badge variant="warning">{riskProfile || 'Moderate'}</Badge>;
   };
 
   const formatCurrency = (amount: number) => {
@@ -58,10 +56,74 @@ export const ClientProfilePage: React.FC = () => {
   if (isLoading) {
     return (
       <PageWrapper>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading client profile...</p>
+        <div className="space-y-6">
+          <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
+
+          <Card padding="lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-6">
+                <div className="h-20 w-20 animate-pulse rounded-xl bg-gray-200" />
+                <div className="space-y-3">
+                  <div className="h-8 w-56 animate-pulse rounded bg-gray-200" />
+                  <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                    <div className="h-4 w-48 animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-40 animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-36 animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-44 animate-pulse rounded bg-gray-100" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-72 space-y-3 rounded-xl border border-gray-100 p-4">
+                <div className="h-4 w-24 animate-pulse rounded bg-gray-100" />
+                <div className="h-8 w-36 animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-full animate-pulse rounded bg-gray-100" />
+                <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
+              </div>
+            </div>
+          </Card>
+
+          <Card padding="md">
+            <div className="grid grid-cols-4 gap-3">
+              {['tab-1', 'tab-2', 'tab-3', 'tab-4'].map((tabKey) => (
+                <div key={tabKey} className="h-10 animate-pulse rounded-lg bg-gray-200" />
+              ))}
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <Card padding="md">
+                <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  {['alloc-1', 'alloc-2', 'alloc-3', 'alloc-4'].map((allocKey) => (
+                    <div key={allocKey} className="h-16 animate-pulse rounded-xl bg-gray-100" />
+                  ))}
+                </div>
+              </Card>
+              <Card padding="md">
+                <div className="h-6 w-56 animate-pulse rounded bg-gray-200" />
+                <div className="mt-4 h-56 animate-pulse rounded-xl bg-gray-100" />
+              </Card>
+            </div>
+            <div className="space-y-6">
+              <Card padding="md">
+                <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
+                <div className="mt-4 space-y-3">
+                  <div className="h-9 animate-pulse rounded-lg bg-gray-100" />
+                  <div className="h-9 animate-pulse rounded-lg bg-gray-100" />
+                  <div className="h-9 animate-pulse rounded-lg bg-gray-100" />
+                </div>
+              </Card>
+              <Card padding="md">
+                <div className="h-6 w-40 animate-pulse rounded bg-gray-200" />
+                <div className="mt-4 space-y-3">
+                  <div className="h-12 animate-pulse rounded-lg bg-gray-100" />
+                  <div className="h-12 animate-pulse rounded-lg bg-gray-100" />
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </PageWrapper>
@@ -190,10 +252,12 @@ export const ClientProfilePage: React.FC = () => {
                 Recommend regular portfolio reviews and risk assessment updates.
               </p>
               <div className="flex items-center gap-3">
-                <Button variant="primary" size="sm">
-                  Generate Full Report
-                </Button>
-                <Button variant="secondary" size="sm">
+                <a href="/client-report.html" download="client-report.html">
+                  <Button variant="primary" size="sm">
+                    Generate Full Report
+                  </Button>
+                </a>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/chat')}>
                   Ask AI Assistant
                 </Button>
               </div>
@@ -224,8 +288,13 @@ export const ClientProfilePage: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               {portfolioLoading ? (
                 <Card padding="md">
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                  <div className="space-y-3">
+                    <div className="h-6 w-40 animate-pulse rounded bg-gray-200" />
+                    <div className="grid grid-cols-2 gap-4">
+                      {['metric-1', 'metric-2', 'metric-3', 'metric-4'].map((metricKey) => (
+                        <div key={metricKey} className="h-16 animate-pulse rounded-xl bg-gray-100" />
+                      ))}
+                    </div>
                   </div>
                 </Card>
               ) : portfolio ? (
@@ -233,8 +302,9 @@ export const ClientProfilePage: React.FC = () => {
                   <AllocationGrid allocations={portfolio.allocations} />
                   {performanceLoading ? (
                     <Card padding="md">
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                      <div className="space-y-3">
+                        <div className="h-6 w-52 animate-pulse rounded bg-gray-200" />
+                        <div className="h-56 animate-pulse rounded-xl bg-gray-100" />
                       </div>
                     </Card>
                   ) : performance?.data && performance.data.length > 0 ? (

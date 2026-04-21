@@ -13,13 +13,20 @@ interface EnvConfig {
 }
 
 function validateEnv(): EnvConfig {
-  const required = [
-    'SUPABASE_URL',
-    'SUPABASE_ANON_KEY',
-    'GEMINI_API_KEY',
-  ];
+  const missing: string[] = [];
 
-  const missing = required.filter((key) => !process.env[key]);
+  if (!process.env.SUPABASE_URL) {
+    missing.push('SUPABASE_URL');
+  }
+
+  if (!process.env.SUPABASE_ANON_KEY) {
+    missing.push('SUPABASE_ANON_KEY');
+  }
+
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY;
+  if (!geminiApiKey) {
+    missing.push('GEMINI_API_KEY or GEMINI_KEY');
+  }
 
   if (missing.length > 0) {
     throw new Error(
@@ -32,7 +39,7 @@ function validateEnv(): EnvConfig {
     PORT: Number.parseInt(process.env.PORT || '3001', 10),
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
+    GEMINI_API_KEY: geminiApiKey!,
     GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
     CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174',
   };

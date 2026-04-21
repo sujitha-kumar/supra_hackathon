@@ -6,57 +6,61 @@ export const useClients = (params?: ClientsQueryParams) => {
     queryKey: ['clients', params],
     queryFn: () => clientService.getAll(params),
     staleTime: 30000,
+    gcTime: 30000,
   });
 };
 
-export const useClient = (id: number) => {
+export const useClient = (id: string | null | undefined) => {
   return useQuery({
     queryKey: ['client', id],
-    queryFn: () => clientService.getById(id),
+    queryFn: () => clientService.getById(id!),
     enabled: !!id,
+    staleTime: 60000,
+    gcTime: 60000,
   });
 };
 
-export const useClientProfile = (id: number) => {
+export const useClientProfile = (id: string | null | undefined) => {
   return useQuery({
     queryKey: ['client', id, 'profile'],
-    queryFn: () => clientService.getProfile(id),
+    queryFn: () => clientService.getProfile(id!),
     enabled: !!id,
-    staleTime: 30000,
+    staleTime: 60000,
+    gcTime: 60000,
   });
 };
 
-export const useClientPortfolio = (id: number) => {
+export const useClientPortfolio = (id: string | null | undefined) => {
   return useQuery({
     queryKey: ['client', id, 'portfolio'],
-    queryFn: () => clientService.getPortfolio(id),
+    queryFn: () => clientService.getPortfolio(id!),
     enabled: !!id,
     staleTime: 30000,
   });
 };
 
-export const useClientPerformance = (id: number) => {
+export const useClientPerformance = (id: string | null | undefined) => {
   return useQuery({
     queryKey: ['client', id, 'performance'],
-    queryFn: () => clientService.getPerformance(id),
+    queryFn: () => clientService.getPerformance(id!),
     enabled: !!id,
     staleTime: 30000,
   });
 };
 
-export const useClientInteractions = (id: number, limit: number = 10) => {
+export const useClientInteractions = (id: string | null | undefined, limit: number = 10) => {
   return useQuery({
     queryKey: ['client', id, 'interactions', limit],
-    queryFn: () => clientService.getInteractions(id, limit),
+    queryFn: () => clientService.getInteractions(id!, limit),
     enabled: !!id,
     staleTime: 30000,
   });
 };
 
-export const useClientBrief = (id: number) => {
+export const useClientBrief = (id: string | null | undefined) => {
   return useQuery({
     queryKey: ['client', id, 'brief'],
-    queryFn: () => clientService.getBrief(id),
+    queryFn: () => clientService.getBrief(id!),
     enabled: !!id,
     staleTime: 30000,
   });

@@ -70,10 +70,10 @@ export const Sidebar: React.FC = () => {
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">S</span>
+            <span className="text-white font-bold text-xl">W</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">SaaS App</h1>
+            <h1 className="text-xl font-bold text-gray-900">WealthLens</h1>
             <p className="text-xs text-gray-500">Premium Edition</p>
           </div>
         </div>

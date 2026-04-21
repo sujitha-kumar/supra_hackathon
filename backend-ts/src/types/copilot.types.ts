@@ -26,7 +26,7 @@ export interface TaskSuggestion {
 }
 
 export interface TaskSuggestionRequest {
-  client_id: number;
+  client_id: string;
   context?: string;
 }
 
@@ -42,7 +42,7 @@ export interface CopilotInsight {
   description: string;
   type: CopilotInsightType;
   priority: 'low' | 'medium' | 'high';
-  clientId?: number;
+  clientId?: string;
   clientName?: string;
   actionRequired: boolean;
 }

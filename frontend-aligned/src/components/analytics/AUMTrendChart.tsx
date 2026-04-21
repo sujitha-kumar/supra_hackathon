@@ -15,7 +15,8 @@ export const AUMTrendChart: React.FC<AUMTrendChartProps> = ({ data }) => {
   };
 
   const formatValue = (value: number) => {
-    return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+    return `₹${(value / 100000).toFixed(1)}L`;
   };
 
   return (
@@ -31,7 +32,7 @@ export const AUMTrendChart: React.FC<AUMTrendChartProps> = ({ data }) => {
           const isLast = index === data.length - 1;
           
           return (
-            <div key={item.month} className="flex-1 flex flex-col items-center gap-2">
+            <div key={`${item.month}-${index}`} className="flex-1 flex flex-col items-center gap-2">
               <div className="relative w-full flex items-end justify-center h-48">
                 <div className="relative w-full max-w-[40px] group">
                   <div

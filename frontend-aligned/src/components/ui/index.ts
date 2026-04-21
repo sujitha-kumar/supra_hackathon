@@ -7,5 +7,6 @@ export { Modal } from './Modal';
 export { Pagination } from './Pagination';
 export { Skeleton, CardSkeleton, TableSkeleton, ListSkeleton } from './Skeleton';
 export { ErrorState, EmptyState } from './ErrorState';
+export { ErrorBoundary } from './ErrorBoundary';
 export { ToastProvider, useToast } from './Toast';
 export { LoadingSpinner, LoadingOverlay, LoadingPage } from './LoadingSpinner';

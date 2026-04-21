@@ -2,19 +2,38 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout';
 import { Button } from '../components/ui';
-import { RecentClientsTable, QuickActionsPanel, AIClientBrief } from '../components/dashboard';
-import { mockClients } from '../data/mockClients';
+import { QuickActionsPanel, AIClientBrief } from '../components/dashboard';
+import { useClients } from '../hooks/useClients';
+import type { Client } from '../types/api';
 
 export const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const navigate = useNavigate();
 
+  // Map filter → risk_profile for the new schema
+  const riskProfileMap: Record<string, string | undefined> = {
+    all: undefined,
+    low: 'Low',
+    moderate: 'Moderate',
+    high: 'High',
+    aggressive: 'Aggressive',
+  };
+
+  const { data: clientsData, isLoading } = useClients({
+    limit: 10,
+    risk_profile: riskProfileMap[activeFilter],
+    search: searchQuery.trim().length >= 2 ? searchQuery.trim() : undefined,
+  });
+
+  const clients = clientsData?.clients || [];
+
   const filters = [
-    { id: 'all', label: 'All Clients' },
-    { id: 'active', label: 'Active' },
-    { id: 'pending', label: 'Pending' },
-    { id: 'inactive', label: 'Inactive' },
+    { id: 'all',        label: 'All Clients' },
+    { id: 'low',        label: 'Low Risk' },
+    { id: 'moderate',   label: 'Moderate' },
+    { id: 'high',       label: 'High Risk' },
+    { id: 'aggressive', label: 'Aggressive' },
   ];
 
   const getCurrentGreeting = () => {
@@ -109,7 +128,85 @@ export const HomePage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3">
-            <RecentClientsTable clients={mockClients} />
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Recent Clients</h2>
+                <button
+                  className="text-sm text-brand hover:text-blue-700 font-medium"
+                  onClick={() => navigate('/clients')}
+                >
+                  View all →
+                </button>
+              </div>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-14 animate-pulse rounded-xl bg-gray-100" />
+                  ))}
+                </div>
+              ) : clients.length === 0 ? (
+                <p className="text-gray-500 text-sm py-8 text-center">No clients found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-3 text-sm font-medium text-gray-600">Client</th>
+                        <th className="text-left py-3 px-3 text-sm font-medium text-gray-600">Risk</th>
+                        <th className="text-left py-3 px-3 text-sm font-medium text-gray-600">AUM</th>
+                        <th className="text-left py-3 px-3 text-sm font-medium text-gray-600">1Y Return</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clients.map((client: Client) => {
+                        const riskColor =
+                          client.risk_profile === 'Low' ? 'text-green-600' :
+                          client.risk_profile === 'Moderate' ? 'text-yellow-600' :
+                          client.risk_profile === 'High' ? 'text-orange-600' : 'text-red-600';
+                        const ret1y = client.performance?.return_1y;
+                        const retColor = ret1y !== undefined ? (ret1y >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-500';
+                        return (
+                          <tr
+                            key={client.id}
+                            onClick={() => navigate(`/clients/${client.id}`)}
+                            className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-gradient-to-br from-brand to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-semibold text-xs">
+                                    {client.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900 text-sm">{client.name}</p>
+                                  <p className="text-xs text-gray-500">{client.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`text-sm font-medium ${riskColor}`}>{client.risk_profile}</span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <p className="text-sm font-semibold text-gray-900">
+                                {client.total_aum >= 10_000_000
+                                  ? `₹${(client.total_aum / 10_000_000).toFixed(1)}Cr`
+                                  : `₹${(client.total_aum / 100_000).toFixed(1)}L`}
+                              </p>
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`text-sm font-medium ${retColor}`}>
+                                {ret1y !== undefined ? `${ret1y > 0 ? '+' : ''}${ret1y}%` : '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="lg:col-span-2 space-y-6">

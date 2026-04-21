@@ -11,7 +11,7 @@ export class ChatRepository {
       const { data: clientData } = await supabase
         .from('clients')
         .select('name')
-        .eq('client_id', sessionData.client_id)
+        .eq('id', sessionData.client_id)
         .single();
 
       clientName = clientData?.name;
@@ -22,7 +22,6 @@ export class ChatRepository {
     const { data, error } = await supabase
       .from('chat_sessions')
       .insert({
-        client_id: sessionData.client_id,
         created_at: now.toISOString(),
       })
       .select()
@@ -48,7 +47,7 @@ export class ChatRepository {
   async findAllSessions(): Promise<ChatSession[]> {
     const { data, error } = await supabase
       .from('chat_sessions')
-      .select('session_id, client_id, created_at, clients(name)')
+      .select('session_id, client_id, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -62,8 +61,16 @@ export class ChatRepository {
           .select('*', { count: 'exact', head: true })
           .eq('session_id', row.session_id);
 
-        const clients = (row as unknown as { clients?: { name?: string } | Array<{ name?: string }> }).clients;
-        const clientName = Array.isArray(clients) ? clients[0]?.name : clients?.name;
+        // Optionally resolve client name if client_id is present
+        let clientName: string | undefined;
+        if (row.client_id) {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('name')
+            .eq('id', row.client_id)
+            .single();
+          clientName = clientData?.name;
+        }
 
         return {
           id: String(row.session_id),

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class TaskRepository {
   async findAll(params: TasksQueryParams): Promise<{ tasks: Task[]; total: number }> {
-    let query = supabase.from('tasks').select('*, clients(name)', { count: 'exact' });
+    let query = supabase.from('tasks').select('*', { count: 'exact' });
 
     if (params.status) {
       query = query.eq('status', params.status);
@@ -41,7 +41,7 @@ export class TaskRepository {
   async findById(id: string): Promise<Task | null> {
     const { data, error } = await supabase
       .from('tasks')
-      .select('*, clients(name)')
+      .select('*')
       .eq('id', id)
       .single();
 

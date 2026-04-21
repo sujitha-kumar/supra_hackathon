@@ -11,10 +11,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
         <div>
           <div className="flex items-center gap-3 mb-16">
             <div className="w-12 h-12 bg-brand rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-xl">S</span>
+              <span className="text-white font-bold text-xl">W</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">SaaS App</h2>
+              <h2 className="text-xl font-bold text-gray-900">WealthLens</h2>
               <p className="text-xs text-gray-600">Premium Edition</p>
             </div>
           </div>

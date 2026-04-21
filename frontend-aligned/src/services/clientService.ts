@@ -18,7 +18,7 @@ export interface ClientsResponse {
 
 export interface PortfolioResponse {
   portfolio_id: number;
-  client_id: number;
+  client_id: string;
   total_value: number;
   allocations: {
     equity: number;
@@ -26,6 +26,7 @@ export interface PortfolioResponse {
     gold: number;
     cash: number;
   };
+  sip_active: boolean;
   last_updated: string;
 }
 
@@ -40,7 +41,7 @@ export interface PerformanceResponse {
 
 export interface Interaction {
   interaction_id: number;
-  client_id: number;
+  client_id: string;
   type: 'Call' | 'Email' | 'Meeting';
   notes: string;
   created_at: string;
@@ -59,7 +60,7 @@ export interface BriefInsight {
 }
 
 export interface ClientBriefResponse {
-  client_id: number;
+  client_id: string;
   generated_at: string;
   summary: string;
   patterns: string[];
@@ -73,34 +74,34 @@ export const clientService = {
     return response.data;
   },
 
-  getById: async (id: number): Promise<Client> => {
+  getById: async (id: string): Promise<Client> => {
     const response = await apiClient.get<Client>(`/clients/${id}`);
     return response.data;
   },
 
-  getProfile: async (id: number): Promise<Client> => {
+  getProfile: async (id: string): Promise<Client> => {
     const response = await apiClient.get<Client>(`/clients/${id}/profile`);
     return response.data;
   },
 
-  getPortfolio: async (id: number): Promise<PortfolioResponse> => {
+  getPortfolio: async (id: string): Promise<PortfolioResponse> => {
     const response = await apiClient.get<PortfolioResponse>(`/clients/${id}/portfolio`);
     return response.data;
   },
 
-  getPerformance: async (id: number): Promise<PerformanceResponse> => {
+  getPerformance: async (id: string): Promise<PerformanceResponse> => {
     const response = await apiClient.get<PerformanceResponse>(`/clients/${id}/performance`);
     return response.data;
   },
 
-  getInteractions: async (id: number, limit: number = 10): Promise<InteractionsResponse> => {
+  getInteractions: async (id: string, limit: number = 10): Promise<InteractionsResponse> => {
     const response = await apiClient.get<InteractionsResponse>(`/clients/${id}/interactions`, {
       params: { limit },
     });
     return response.data;
   },
 
-  getBrief: async (id: number): Promise<ClientBriefResponse> => {
+  getBrief: async (id: string): Promise<ClientBriefResponse> => {
     const response = await apiClient.get<ClientBriefResponse>(`/clients/${id}/brief`);
     return response.data;
   },

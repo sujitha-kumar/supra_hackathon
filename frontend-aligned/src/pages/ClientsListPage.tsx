@@ -36,13 +36,11 @@ export const ClientsListPage: React.FC = () => {
   };
 
   const getRiskBadge = (risk: Client['risk_profile']) => {
-    const variants = {
-      'Conservative': { variant: 'success' as const, label: 'Conservative' },
-      'Moderate': { variant: 'warning' as const, label: 'Moderate' },
-      'Aggressive': { variant: 'danger' as const, label: 'Aggressive' },
-    };
-    const config = variants[risk];
-    return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
+    const normalizedRisk = String(risk || '').toLowerCase();
+    if (normalizedRisk === 'low')         return <Badge variant="success" size="sm">Low</Badge>;
+    if (normalizedRisk === 'high')        return <Badge variant="warning" size="sm">High</Badge>;
+    if (normalizedRisk === 'aggressive')  return <Badge variant="danger" size="sm">Aggressive</Badge>;
+    return <Badge variant="warning" size="sm">Moderate</Badge>;
   };
 
   const getSegmentBadge = (segment: Client['segment']) => {
@@ -51,7 +49,13 @@ export const ClientsListPage: React.FC = () => {
       'HNI': { variant: 'brand' as const, label: 'HNI' },
       'UHNI': { variant: 'success' as const, label: 'UHNI' },
     };
-    const config = variants[segment];
+    const normalizedSegment = String(segment || '').toUpperCase();
+    const config =
+      normalizedSegment === 'RETAIL'
+        ? variants.Retail
+        : normalizedSegment === 'UHNI'
+          ? variants.UHNI
+          : variants.HNI;
     return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
   };
 
@@ -177,10 +181,49 @@ export const ClientsListPage: React.FC = () => {
   if (isLoading) {
     return (
       <PageWrapper>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading clients...</p>
+        <div className="space-y-6">
+          <div className="h-10 w-72 animate-pulse rounded-lg bg-gray-200" />
+          <div className="h-5 w-96 animate-pulse rounded bg-gray-100" />
+
+          <div className="flex items-center gap-4">
+            <div className="h-11 flex-1 animate-pulse rounded-xl bg-gray-200" />
+            <div className="h-11 w-44 animate-pulse rounded-xl bg-gray-200" />
+            <div className="h-11 w-44 animate-pulse rounded-xl bg-gray-200" />
+          </div>
+
+          <Card padding="sm">
+            <div className="space-y-3 p-2">
+              <div className="grid grid-cols-6 gap-4 border-b border-gray-100 pb-3">
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" />
+              </div>
+
+              {['row-1', 'row-2', 'row-3', 'row-4', 'row-5', 'row-6'].map((rowKey) => (
+                <div key={rowKey} className="grid grid-cols-6 items-center gap-4 rounded-xl border border-gray-100 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 animate-pulse rounded-xl bg-gray-200" />
+                    <div className="space-y-2">
+                      <div className="h-3.5 w-28 animate-pulse rounded bg-gray-200" />
+                      <div className="h-3 w-40 animate-pulse rounded bg-gray-100" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="ml-auto h-8 w-16 animate-pulse rounded-lg bg-gray-200" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <div className="flex justify-end gap-2">
+            <div className="h-9 w-24 animate-pulse rounded-lg bg-gray-200" />
+            <div className="h-9 w-24 animate-pulse rounded-lg bg-gray-200" />
           </div>
         </div>
       </PageWrapper>
@@ -195,7 +238,7 @@ export const ClientsListPage: React.FC = () => {
             <div className="text-red-500 text-5xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Clients</h2>
             <p className="text-gray-600">{error instanceof Error ? error.message : 'Failed to load clients'}</p>
-            <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+            <Button className="mt-4" onClick={() => globalThis.location.reload()}>Retry</Button>
           </div>
         </div>
       </PageWrapper>

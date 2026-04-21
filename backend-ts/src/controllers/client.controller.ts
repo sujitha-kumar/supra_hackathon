@@ -28,7 +28,7 @@ export class ClientController {
 
   getClientById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const client = await this.service.getClientById(id);
       res.json(client);
     } catch (error) {
@@ -38,7 +38,7 @@ export class ClientController {
 
   getClientProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const client = await this.service.getClientById(id);
       res.json(client);
     } catch (error) {
@@ -48,7 +48,7 @@ export class ClientController {
 
   getClientPortfolio = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const portfolio = await this.service.getClientPortfolio(id);
       res.json(portfolio);
     } catch (error) {
@@ -58,7 +58,7 @@ export class ClientController {
 
   getClientPerformance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const performance = await this.service.getClientPerformance(id);
       res.json(performance);
     } catch (error) {
@@ -68,7 +68,7 @@ export class ClientController {
 
   getClientInteractions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
       const interactions = await this.service.getClientInteractions(id, limit);
       res.json(interactions);
@@ -79,7 +79,7 @@ export class ClientController {
 
   getClientBrief = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = req.params.id;
       const brief = await this.service.getClientBrief(id);
       res.json(brief);
     } catch (error) {

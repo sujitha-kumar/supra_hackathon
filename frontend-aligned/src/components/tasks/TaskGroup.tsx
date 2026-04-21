@@ -20,8 +20,8 @@ export const TaskGroup: React.FC<TaskGroupProps> = ({ title, tasks, icon, onTogg
         <span className="text-sm text-gray-500">({tasks.length})</span>
       </div>
       <div className="space-y-3">
-        {tasks.map((task) => (
-          <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} />
+        {tasks.map((task, index) => (
+          <TaskRow key={task.id ?? index} task={task} onToggleComplete={onToggleComplete} />
         ))}
       </div>
     </div>

@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { emitToast } from './toastEvents';
+import { config } from '../config';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = config.apiBaseUrl;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -34,7 +35,7 @@ apiClient.interceptors.response.use(
   (error: AxiosError<{ error?: string }>) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth-storage');
-      window.location.href = '/login';
+      globalThis.location.href = '/login';
       return Promise.reject(error);
     }
 

@@ -10,7 +10,7 @@ router.get('/insights', controller.getInsights);
 
 router.post(
   '/task-suggestion',
-  [body('client_id').isInt({ min: 1 })],
+  [body('client_id').isString().notEmpty()],
   validateRequest,
   controller.getTaskSuggestions
 );
