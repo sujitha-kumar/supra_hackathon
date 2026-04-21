@@ -4,9 +4,16 @@ import { ChatMessageList, ChatInput, SuggestedActions, ClientContextPanel } from
 import type { ClientContextData, PortfolioContextData } from '../components/chat/ClientContextPanel';
 import { useClientProfile, useClientPortfolio } from '../hooks/useClients';
 import type { ChatMessage, SuggestedAction } from '../types/chat';
-import { chatService } from '../services/chatService';
+import { chatService, type SupportedLanguage } from '../services/chatService';
 
 const DEMO_CLIENT_ID = 1;
+const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
+  { value: 'english', label: 'English' },
+  { value: 'hindi', label: 'Hindi' },
+  { value: 'tamil', label: 'Tamil' },
+  { value: 'telugu', label: 'Telugu' },
+  { value: 'kannada', label: 'Kannada' },
+];
 
 function formatINR(value: number): string {
   if (value >= 10_000_000) return `₹${(value / 10_000_000).toFixed(1)}Cr`;
@@ -25,6 +32,7 @@ export const LiveChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAITyping, setIsAITyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [language, setLanguage] = useState<SupportedLanguage>('english');
 
   const location = useLocation();
   const hasAutoSentInitial = useRef(false);
@@ -135,6 +143,7 @@ export const LiveChatPage: React.FC = () => {
         session_id: currentSessionId,
         message: content,
         client_id: DEMO_CLIENT_ID,
+        language,
       });
 
       setMessages((prev) => prev.filter((msg) => !msg.isTyping));
@@ -176,6 +185,29 @@ export const LiveChatPage: React.FC = () => {
               <span className="text-sm text-gray-600">AI Online</span>
             </div>
           </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {LANGUAGE_OPTIONS.map((option) => {
+              const isActive = option.value === language;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setLanguage(option.value)}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'border-brand bg-brand text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+            <span className="ml-2 text-xs text-gray-500">
+              AI replies will be generated in {LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.
+            </span>
+          </div>
         </div>
 
         <ChatMessageList messages={messages} />
@@ -184,7 +216,7 @@ export const LiveChatPage: React.FC = () => {
           <SuggestedActions actions={suggestedActions} onSelect={handleSendMessage} />
         )}
 
-        <ChatInput onSend={handleSendMessage} disabled={isAITyping} />
+        <ChatInput onSend={handleSendMessage} disabled={isAITyping} placeholder={`Ask in any language. Reply will come in ${LANGUAGE_OPTIONS.find((option) => option.value === language)?.label}.`} />
       </div>
 
       <ClientContextPanel client={clientContext} portfolio={portfolioContext} />

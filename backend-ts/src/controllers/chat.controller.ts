@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ChatService } from '../services/chat.service';
-import { CreateSessionRequest, SendMessageRequest } from '../types';
+import { CreateSessionRequest, SendMessageRequest, TranslateMessageRequest } from '../types';
 
 export class ChatController {
-  private service: ChatService;
+  private readonly service: ChatService;
 
   constructor() {
     this.service = new ChatService();
@@ -42,6 +42,16 @@ export class ChatController {
     try {
       const messageData: SendMessageRequest = req.body;
       const result = await this.service.sendMessage(messageData);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  translateMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const request: TranslateMessageRequest = req.body;
+      const result = await this.service.translateMessage(request);
       res.json(result);
     } catch (error) {
       next(error);

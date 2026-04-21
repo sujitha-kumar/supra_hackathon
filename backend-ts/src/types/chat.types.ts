@@ -1,4 +1,5 @@
 export type MessageSender = 'user' | 'ai';
+export type SupportedLanguage = 'english' | 'hindi' | 'tamil' | 'telugu' | 'kannada';
 
 export interface ChatMessage {
   id: string;
@@ -41,9 +42,20 @@ export interface SendMessageRequest {
   session_id: string;
   message: string;
   client_id?: number;
+  language?: SupportedLanguage;
 }
 
 export interface SendMessageResponse {
   userMessage: ChatMessage;
   aiResponse: ChatMessage;
+}
+
+export interface TranslateMessageRequest {
+  text: string;
+  language: SupportedLanguage;
+}
+
+export interface TranslateMessageResponse {
+  translatedText: string;
+  language: SupportedLanguage;
 }

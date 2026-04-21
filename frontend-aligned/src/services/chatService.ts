@@ -1,6 +1,7 @@
 import { apiClient } from '../lib/axios';
 
 export type MessageSender = 'user' | 'ai';
+export type SupportedLanguage = 'english' | 'hindi' | 'tamil' | 'telugu' | 'kannada';
 
 export interface ChatMessageResponse {
   id: string;
@@ -30,6 +31,7 @@ export interface SendMessageRequest {
   session_id: string;
   message: string;
   client_id?: number;
+  language?: SupportedLanguage;
 }
 
 export interface SendMessageResponse {
@@ -42,6 +44,16 @@ export interface SessionMessagesResponse {
   messages: ChatMessageResponse[];
 }
 
+export interface TranslateMessageRequest {
+  text: string;
+  language: SupportedLanguage;
+}
+
+export interface TranslateMessageResponse {
+  translatedText: string;
+  language: SupportedLanguage;
+}
+
 export const chatService = {
   createSession: async (request?: CreateSessionRequest): Promise<CreateSessionResponse> => {
     const response = await apiClient.post<CreateSessionResponse>('/chat/session', request);
@@ -50,6 +62,11 @@ export const chatService = {
 
   sendMessage: async (request: SendMessageRequest): Promise<SendMessageResponse> => {
     const response = await apiClient.post<SendMessageResponse>('/chat/message', request);
+    return response.data;
+  },
+
+  translateMessage: async (request: TranslateMessageRequest): Promise<TranslateMessageResponse> => {
+    const response = await apiClient.post<TranslateMessageResponse>('/chat/translate', request);
     return response.data;
   },
 

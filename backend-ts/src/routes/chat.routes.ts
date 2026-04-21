@@ -11,5 +11,6 @@ router.post('/sessions', chatValidators.createSession, validateRequest, controll
 router.get('/sessions', controller.getSessions);
 router.get('/sessions/:sessionId/messages', chatValidators.getMessages, validateRequest, controller.getSessionMessages);
 router.post('/message', chatValidators.sendMessage, validateRequest, controller.sendMessage);
+router.post('/translate', chatValidators.translateMessage, validateRequest, controller.translateMessage);
 
 export default router;

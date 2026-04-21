@@ -1,4 +1,4 @@
-import { body, query, param, ValidationChain } from 'express-validator';
+import { body, query, param } from 'express-validator';
 
 export const clientValidators = {
   getClients: [
@@ -59,6 +59,11 @@ export const chatValidators = {
     body('session_id').isString().notEmpty(),
     body('message').isString().notEmpty().trim(),
     body('client_id').optional().isInt({ min: 1 }),
+    body('language').optional().isIn(['english', 'hindi', 'tamil', 'telugu', 'kannada']),
+  ],
+  translateMessage: [
+    body('text').isString().notEmpty().trim(),
+    body('language').isIn(['english', 'hindi', 'tamil', 'telugu', 'kannada']),
   ],
 };
 
